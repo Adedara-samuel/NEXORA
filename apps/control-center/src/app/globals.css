@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * NEXORA brand palette — derived from the mark (electric blue/cyan "N" on
+ * near-black). Light is the baseline token set; dark redefines the same
+ * tokens under a system-preference media query and an explicit
+ * [data-theme="dark"] override (set by the ThemeProvider), so the toggle
+ * always wins over the OS preference. Never give a token its only
+ * definition inside a media/data-theme block.
+ */
+:root {
+  --background: 210 40% 99%;
+  --surface: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --primary: 217 91% 50%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 189 85% 38%;
+  --accent-foreground: 210 40% 98%;
+  --muted: 210 30% 95%;
+  --muted-foreground: 215 16% 42%;
+  --border: 214 32% 88%;
+  --success: 152 65% 34%;
+  --danger: 0 72% 45%;
+  --radius: 0.75rem;
+  --font-display: "Orbitron", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: 222 47% 4%;
+    --surface: 222 40% 8%;
+    --foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --accent: 189 94% 55%;
+    --accent-foreground: 222 47% 6%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 65%;
+    --border: 222 30% 18%;
+    --success: 152 76% 45%;
+    --danger: 0 84% 63%;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: 222 47% 4%;
+  --surface: 222 40% 8%;
+  --foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 189 94% 55%;
+  --accent-foreground: 222 47% 6%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 215 20% 65%;
+  --border: 222 30% 18%;
+  --success: 152 76% 45%;
+  --danger: 0 84% 63%;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+  background-color: hsl(var(--primary) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+/* Respect reduced-motion preferences across every animation utility. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

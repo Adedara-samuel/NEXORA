@@ -1,0 +1,94 @@
+// NEXORA Core API — Prisma schema
+//
+// Phase 1 (Foundation) scope: only the tables required to prove out the
+// authentication foundation and audit logging exist here.
+//
+//   - PlatformUser   : identity for NEXORA Control Center operators.
+//                      Platform roles/permissions land in Phase 2 as a
+//                      proper RBAC join (PlatformRole/PlatformPermission),
+//                      so no role column is hardcoded here.
+//   - RefreshToken   : hashed, rotating refresh tokens for both auth scopes
+//                      (platform now; organisation from Phase 4 onward).
+//   - AuditLog       : generic append-only audit trail (section 58), used
+//                      from the very first login event onward.
+//
+// Every later phase ADDS models here — this file is never treated as final.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthScope {
+  PLATFORM
+  ORGANISATION
+}
+
+enum PlatformUserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model PlatformUser {
+  id           String              @id @default(uuid())
+  email        String              @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  status       PlatformUserStatus  @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  refreshTokens RefreshToken[]
+
+  @@map("platform_users")
+}
+
+/// Refresh tokens are stored as a hash (never the raw token) so a leaked
+/// database dump cannot be used to mint sessions. Rotation: each refresh
+/// issues a new token and revokes the previous one via `revokedAt`.
+model RefreshToken {
+  id             String    @id @default(uuid())
+  jti            String    @unique
+  tokenHash      String
+  scope          AuthScope
+  platformUserId String?
+  organisationId String?
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  platformUser PlatformUser? @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@index([platformUserId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Append-only audit trail. actorId is deliberately NOT a foreign key: the
+/// actor can be a platform user, an organisation user (Phase 4+), or a
+/// background job/system process, each living in a different table (or no
+/// table at all). actorType disambiguates which.
+model AuditLog {
+  id             String   @id @default(uuid())
+  actorId        String?
+  actorType      String?
+  organisationId String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organisationId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

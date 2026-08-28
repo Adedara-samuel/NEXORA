@@ -1,1 +1,133 @@
 # NEXORA
+
+Enterprise-grade, multi-tenant organisational management platform. Owned and
+operated by **SAPOK TECH**.
+
+NEXORA consists of two user-facing applications sharing one backend:
+
+- **NEXORA Control Center** (`apps/control-center`) — the web app SAPOK TECH
+  platform administrators use to onboard organisations, manage subscriptions
+  and modules, and monitor the ecosystem.
+- **NEXORA Organisation Desktop** (`apps/organisation-desktop`) — one Tauri
+  desktop application used by every organisation; the authenticated session
+  determines organisation identity, subscription, enabled modules, roles and
+  permissions.
+
+Both talk to the **NEXORA Core API** (`services/core-api`, NestJS), the
+single source of truth. PostgreSQL (with pgvector for future AI phases) and
+Redis back the API; the **NEXORA AI Service** (`services/ai-service`,
+Python/FastAPI) arrives in Phase 7.
+
+## Monorepo layout
+
+```
+apps/
+  control-center/        Next.js — platform administration web app
+  organisation-desktop/  Tauri + React — organisation-facing desktop app
+services/
+  core-api/               NestJS + Prisma — the backend for both apps
+  ai-service/              Python/FastAPI — NEXORA Intelligence Layer (Phase 7+)
+workers/
+  payroll-worker/          BullMQ workers — each not started until the phase
+  payment-worker/          that needs it (see each worker's README)
+  notification-worker/
+  document-worker/
+  ai-worker/
+packages/
+  ui/          shared shadcn/ui-based component library
+  types/       shared TypeScript domain types
+  validation/  shared Zod schemas (used by both frontend forms and API DTOs)
+  api-client/  typed HTTP client for the Core API
+  config/      shared tsconfig/tailwind/eslint config
+infrastructure/
+  database/   Postgres init scripts (extensions)
+  nginx/      reverse proxy config (Phase 12)
+docs/
+scripts/
+```
+
+## Prerequisites
+
+- Node.js 20+ and `pnpm` (`corepack enable` will pick up the pinned version)
+- Docker Desktop (Postgres + Redis run in containers; the API/web apps run
+  natively for fast local iteration)
+- Rust + `cargo` — only required when building the actual Tauri desktop
+  shell (`apps/organisation-desktop/src-tauri`); the React frontend runs
+  fine without it via `pnpm dev` (browser preview)
+- Python 3.11+ — only required from Phase 7 onward (`services/ai-service`)
+
+## Getting started
+
+```bash
+cp .env.example .env                 # fill in real secrets before anything but local dev
+cp .env services/core-api/.env       # Prisma CLI only reads .env from its own cwd
+pnpm install
+
+pnpm docker:up                       # starts Postgres (pgvector) + Redis only
+pnpm --filter @nexora/types build    # shared packages need a real dist/ build —
+pnpm --filter @nexora/validation build # core-api runs compiled JS, not raw TS source
+pnpm --filter @nexora/core-api prisma:migrate -- --name init
+pnpm core-api:prisma:seed            # seeds a few platform users to log in with
+
+pnpm core-api:dev                    # http://localhost:4000/api/v1 (Swagger at /api/v1/docs)
+pnpm control-center:dev              # http://localhost:3000
+```
+
+Seeded platform accounts (password `ChangeMe123!` for all, override via
+`SEED_SUPER_ADMIN_PASSWORD`):
+
+| Email | Status |
+|---|---|
+| `admin@sapoktech.com` | ACTIVE — super admin |
+| `support@sapoktech.com` | ACTIVE |
+| `finance@sapoktech.com` | ACTIVE |
+| `offboarded@sapoktech.com` | DISABLED — exercises the inactive-user rejection path |
+
+Log in at `http://localhost:3000/login`.
+
+To also run the Core API itself in Docker (closer to production):
+`pnpm docker:up:all` instead of `pnpm docker:up`.
+
+### Deploying Control Center separately (e.g. Vercel)
+
+No repo split needed. Point a Vercel project at this repo with **Root
+Directory** set to `apps/control-center` — Vercel's pnpm-workspace support
+builds it (and its `@nexora/*` dependencies) as an independent deployment
+with its own URL and env vars (`NEXT_PUBLIC_CORE_API_URL` pointing at wherever
+the Core API is hosted). The Core API itself needs a host that runs
+persistent Node services (Railway/Render/Fly/a VPS) rather than Vercel's
+serverless model — Postgres connections, BullMQ workers, and long-lived
+processes don't fit the serverless request lifecycle.
+
+## Development phases
+
+This platform is built incrementally. Status:
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Foundation — monorepo, Docker, Postgres, Redis, Core API, Prisma, basic UI, shared packages, auth foundation | **Verified working end-to-end** |
+| 2 | Control Center — platform auth/users/roles/permissions, organisation management & onboarding | Not started |
+| 3 | Module + Subscription Engine — plans, subscriptions, billing, receipts, expiry/grace period/suspension, renewal | Not started |
+| 4 | Organisation Platform — org auth, Super Admin, user management, custom roles, departments, branches | Not started |
+| 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | Not started |
+| 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | Not started |
+| 7 | NEXORA AI Foundation — Python service, AI gateway, model abstraction, conversations, permissions | Not started |
+| 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | Not started |
+| 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | Not started |
+| 10 | NEXORA Intelligence Platform — feedback, evaluation, training data, model registry | Not started |
+| 11 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | Not started |
+| 12 | Deployment — production Docker, CI/CD, monitoring, backups, desktop release | Not started |
+
+See the full architecture spec for the detailed requirements behind each
+phase. Full PRD/BRD/SRS documentation with flowcharts is maintained as
+published artifacts (see project owner for links) and expands as each phase
+lands — it is not pre-written ahead of the system it describes.
+
+## Notes on this environment
+
+This development machine has no Rust/Cargo and no Python installed, so:
+- `apps/organisation-desktop` currently runs as a plain Vite+React web
+  preview (`pnpm dev` → `http://localhost:1420`); the native Tauri shell
+  (`src-tauri/`) is scaffolded but has not been built/compiled here.
+- `services/ai-service` is not yet scaffolded with code — it starts in
+  Phase 7.

@@ -1,0 +1,38 @@
+{
+  "name": "@nexora/control-center",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NEXORA Control Center — platform administration web app operated by SAPOK TECH",
+  "scripts": {
+    "dev": "next dev -p ${CONTROL_CENTER_PORT:-3000}",
+    "build": "next build",
+    "start": "next start -p ${CONTROL_CENTER_PORT:-3000}",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@tanstack/react-query": "^5.59.16",
+    "zustand": "^5.0.0",
+    "react-hook-form": "^7.53.0",
+    "@hookform/resolvers": "^3.9.0",
+    "zod": "^3.23.8",
+    "lucide-react": "^0.451.0",
+    "recharts": "^2.13.0",
+    "@nexora/ui": "workspace:*",
+    "@nexora/types": "workspace:*",
+    "@nexora/validation": "workspace:*",
+    "@nexora/api-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.3"
+  }
+}
