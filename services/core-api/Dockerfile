@@ -16,6 +16,8 @@ COPY packages/config packages/config
 COPY packages/types packages/types
 COPY packages/validation packages/validation
 COPY services/core-api services/core-api
+RUN pnpm --filter @nexora/types build
+RUN pnpm --filter @nexora/validation build
 RUN pnpm --filter @nexora/core-api prisma:generate
 RUN pnpm --filter @nexora/core-api build
 
@@ -24,6 +26,8 @@ ENV NODE_ENV=production
 COPY --from=build /repo/services/core-api/dist services/core-api/dist
 COPY --from=build /repo/services/core-api/node_modules services/core-api/node_modules
 COPY --from=build /repo/services/core-api/prisma services/core-api/prisma
+COPY --from=build /repo/packages/types packages/types
+COPY --from=build /repo/packages/validation packages/validation
 COPY --from=build /repo/node_modules node_modules
 EXPOSE 4000
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema services/core-api/prisma/schema.prisma && node services/core-api/dist/main.js"]
