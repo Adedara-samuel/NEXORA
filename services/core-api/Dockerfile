@@ -30,4 +30,4 @@ COPY --from=build /repo/packages/types packages/types
 COPY --from=build /repo/packages/validation packages/validation
 COPY --from=build /repo/node_modules node_modules
 EXPOSE 4000
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema services/core-api/prisma/schema.prisma && node services/core-api/dist/main.js"]
+CMD ["sh", "-c", "services/core-api/node_modules/.bin/prisma migrate deploy --schema services/core-api/prisma/schema.prisma && node services/core-api/dist/main.js"]
