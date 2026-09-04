@@ -1,5 +1,5 @@
 # Built from the monorepo root: docker build -f services/core-api/Dockerfile .
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 RUN corepack enable
 WORKDIR /repo
 
