@@ -3,6 +3,8 @@ export * from "./components/button";
 export * from "./components/card";
 export * from "./components/input";
 export * from "./components/label";
+export * from "./components/checkbox";
+export * from "./components/badge";
 export * from "./components/logo";
 export * from "./components/wordmark";
 export * from "./components/splash-screen";

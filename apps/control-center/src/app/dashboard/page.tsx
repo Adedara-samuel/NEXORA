@@ -1,58 +1,75 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Reveal, ThemeToggle, Wordmark } from "@nexora/ui";
-import { apiClient } from "@/lib/api-client";
+import Link from "next/link";
+import { Building2, ShieldCheck, Users } from "lucide-react";
+import { Card, CardDescription, CardHeader, CardTitle, Reveal } from "@nexora/ui";
+import { AppShell } from "@/components/app-shell";
 import { useAuthStore } from "@/store/auth-store";
 
+const SECTIONS = [
+  {
+    href: "/organisations",
+    icon: Building2,
+    title: "Organisations",
+    description: "Onboard organisations and manage their lifecycle status.",
+    permission: "organisations:read",
+  },
+  {
+    href: "/platform-users",
+    icon: Users,
+    title: "Platform Users",
+    description: "Manage Control Center operators and their role assignments.",
+    permission: "platform_users:read",
+  },
+  {
+    href: "/roles",
+    icon: ShieldCheck,
+    title: "Roles",
+    description: "Create roles and choose exactly which permissions each one grants.",
+    permission: "platform_roles:read",
+  },
+];
+
 export default function DashboardPage() {
-  const router = useRouter();
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const refreshToken = useAuthStore((state) => state.refreshToken);
-  const clear = useAuthStore((state) => state.clear);
-
-  useEffect(() => {
-    if (!accessToken) router.replace("/login");
-  }, [accessToken, router]);
-
-  if (!accessToken) return null;
-
-  const handleLogout = async () => {
-    if (refreshToken) await apiClient.auth.logout(refreshToken).catch(() => undefined);
-    clear();
-    router.replace("/login");
-  };
+  const permissions = useAuthStore((state) => state.permissions);
+  const roles = useAuthStore((state) => state.roles);
+  const visibleSections = SECTIONS.filter((section) => permissions.includes(section.permission));
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="flex items-center justify-between gap-2 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-2">
-          <img src="/nexora-logo.png" alt="" className="h-6 w-6 object-contain" draggable={false} />
-          <Wordmark size="sm" />
-          <span className="ml-1 text-xs uppercase tracking-[0.25em] text-muted-foreground">Control Center</span>
-        </div>
-        <ThemeToggle />
-      </header>
-
-      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-16">
+    <AppShell>
+      <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <Reveal>
           <Card>
             <CardHeader>
               <CardTitle>Welcome back</CardTitle>
               <CardDescription>
-                Authentication foundation is live: JWT access/refresh tokens issued by the Core API are verified on
-                every request. Organisation onboarding, subscriptions and platform RBAC land in the next phases.
+                Signed in with {roles.length > 0 ? roles.join(", ") : "no roles assigned"}. The sections below reflect
+                exactly what your roles grant access to.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button variant="outline" onClick={handleLogout}>
-                Log out
-              </Button>
-            </CardContent>
           </Card>
         </Reveal>
+
+        {visibleSections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No roles are assigned to your account yet — ask a Super Admin to assign one.
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {visibleSections.map((section) => (
+              <Link key={section.href} href={section.href}>
+                <Card className="h-full transition-colors hover:border-primary/50">
+                  <CardHeader>
+                    <section.icon className="mb-2 h-5 w-5 text-accent" />
+                    <CardTitle>{section.title}</CardTitle>
+                    <CardDescription>{section.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
-    </main>
+    </AppShell>
   );
 }

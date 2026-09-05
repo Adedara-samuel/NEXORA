@@ -163,6 +163,9 @@ importers:
       '@nexora/types':
         specifier: workspace:*
         version: link:../types
+      '@nexora/validation':
+        specifier: workspace:*
+        version: link:../validation
     devDependencies:
       typescript:
         specifier: ^5.6.3
