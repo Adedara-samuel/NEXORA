@@ -5,3 +5,4 @@ export * from "./rbac";
 export * from "./organisation";
 export * from "./platform-user";
 export * from "./billing";
+export * from "./dashboard";

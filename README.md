@@ -123,6 +123,18 @@ phase. Full PRD/BRD/SRS documentation with flowcharts is maintained as
 published artifacts (see project owner for links) and expands as each phase
 lands — it is not pre-written ahead of the system it describes.
 
+### Design constraint carried forward to Phase 9
+
+Phase 9's tool registry must authorize every AI-initiated action through the
+**same** `PermissionsGuard` / `@RequirePermissions(...)` mechanism introduced
+in Phase 2 (see [`docs/phase-2-platform-rbac-and-organisations.md`](docs/phase-2-platform-rbac-and-organisations.md)) —
+not a parallel ACL system built specifically for the AI layer. An AI agent
+acting on a user's behalf should never be able to see or do anything that
+user's own JWT permissions wouldn't already allow via the normal API. Two
+permission systems (one for humans, one for AI) drift apart over time and are
+exactly how AI copilots end up leaking data at other companies; one shared
+enforcement boundary can't drift from itself.
+
 ## Notes on this environment
 
 This development machine has no Rust/Cargo and no Python installed, so:

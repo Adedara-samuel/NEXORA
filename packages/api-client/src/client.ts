@@ -1,6 +1,7 @@
 import type {
   ApiResult,
   AuthTokens,
+  DashboardSummary,
   Invoice,
   ModuleCatalogEntry,
   Organisation,
@@ -186,5 +187,9 @@ export class NexoraApiClient {
       this.request(`/api/v1/organisations/${organisationId}/invoices`),
 
     findInvoiceById: (id: string): Promise<Invoice> => this.request(`/api/v1/invoices/${id}`),
+  };
+
+  dashboard = {
+    getSummary: (): Promise<DashboardSummary> => this.request("/api/v1/dashboard/summary"),
   };
 }
