@@ -1,11 +1,19 @@
 import type {
   ApiResult,
+  Attendance,
   AuthTokens,
+  Branch,
   DashboardSummary,
+  Department,
+  Employee,
   Invoice,
+  LeaveRequest,
   ModuleCatalogEntry,
   Organisation,
+  OrganisationTaxSettings,
   PaginatedResult,
+  PayrollRun,
+  PayrollRunWithPayslips,
   Permission,
   Plan,
   PlatformUser,
@@ -15,19 +23,30 @@ import type {
 } from "@nexora/types";
 import type {
   ChangeSubscriptionPlanInput,
+  CreateAttendanceInput,
+  CreateEmployeeInput,
+  CreateLeaveRequestInput,
   CreateOrganisationInput,
   CreatePlanInput,
   CreatePlatformUserInput,
   CreateRoleInput,
   CreateSubscriptionInput,
+  DecideLeaveRequestInput,
+  ListAttendanceQuery,
+  ListEmployeesQuery,
+  ListLeaveRequestsQuery,
   ListOrganisationsQuery,
   ListPlatformUsersQuery,
   RenewSubscriptionInput,
+  RunPayrollInput,
+  UpdateAttendanceInput,
+  UpdateEmployeeInput,
   UpdateOrganisationInput,
   UpdateOrganisationStatusInput,
   UpdatePlanInput,
   UpdatePlatformUserInput,
   UpdateRoleInput,
+  UpdateTaxSettingsInput,
 } from "@nexora/validation";
 
 export class NexoraApiError extends Error {
@@ -94,6 +113,12 @@ export class NexoraApiClient {
       this.request("/api/v1/auth/platform/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
+      }),
+
+    organisationLogin: (organisationSlug: string, email: string, password: string): Promise<AuthTokens> =>
+      this.request("/api/v1/auth/organisation/login", {
+        method: "POST",
+        body: JSON.stringify({ organisationSlug, email, password }),
       }),
 
     refresh: (refreshToken: string): Promise<AuthTokens> =>
@@ -194,5 +219,67 @@ export class NexoraApiClient {
 
   dashboard = {
     getSummary: (): Promise<DashboardSummary> => this.request("/api/v1/dashboard/summary"),
+  };
+
+  organisationStructure = {
+    listDepartments: (): Promise<Department[]> => this.request("/api/v1/organisation/departments"),
+
+    listBranches: (): Promise<Branch[]> => this.request("/api/v1/organisation/branches"),
+  };
+
+  employees = {
+    list: (query: Partial<ListEmployeesQuery> = {}): Promise<PaginatedResult<Employee>> =>
+      this.request(`/api/v1/organisation/employees${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<Employee> => this.request(`/api/v1/organisation/employees/${id}`),
+
+    create: (input: CreateEmployeeInput): Promise<Employee> =>
+      this.request("/api/v1/organisation/employees", { method: "POST", body: JSON.stringify(input) }),
+
+    update: (id: string, input: UpdateEmployeeInput): Promise<Employee> =>
+      this.request(`/api/v1/organisation/employees/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  attendance = {
+    list: (query: Partial<ListAttendanceQuery> = {}): Promise<PaginatedResult<Attendance>> =>
+      this.request(`/api/v1/organisation/attendance${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<Attendance> => this.request(`/api/v1/organisation/attendance/${id}`),
+
+    create: (input: CreateAttendanceInput): Promise<Attendance> =>
+      this.request("/api/v1/organisation/attendance", { method: "POST", body: JSON.stringify(input) }),
+
+    update: (id: string, input: UpdateAttendanceInput): Promise<Attendance> =>
+      this.request(`/api/v1/organisation/attendance/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  leave = {
+    list: (query: Partial<ListLeaveRequestsQuery> = {}): Promise<PaginatedResult<LeaveRequest>> =>
+      this.request(`/api/v1/organisation/leave${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<LeaveRequest> => this.request(`/api/v1/organisation/leave/${id}`),
+
+    create: (input: CreateLeaveRequestInput): Promise<LeaveRequest> =>
+      this.request("/api/v1/organisation/leave", { method: "POST", body: JSON.stringify(input) }),
+
+    decide: (id: string, input: DecideLeaveRequestInput): Promise<LeaveRequest> =>
+      this.request(`/api/v1/organisation/leave/${id}/decision`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  payroll = {
+    getTaxSettings: (): Promise<OrganisationTaxSettings> => this.request("/api/v1/organisation/payroll/tax-settings"),
+
+    updateTaxSettings: (input: UpdateTaxSettingsInput): Promise<OrganisationTaxSettings> =>
+      this.request("/api/v1/organisation/payroll/tax-settings", { method: "PUT", body: JSON.stringify(input) }),
+
+    listRuns: (query: { page?: number; pageSize?: number } = {}): Promise<PaginatedResult<PayrollRun>> =>
+      this.request(`/api/v1/organisation/payroll/runs${this.toQueryString(query)}`),
+
+    getRun: (id: string): Promise<PayrollRunWithPayslips> => this.request(`/api/v1/organisation/payroll/runs/${id}`),
+
+    run: (input: RunPayrollInput): Promise<PayrollRunWithPayslips> =>
+      this.request("/api/v1/organisation/payroll/runs", { method: "POST", body: JSON.stringify(input) }),
+
+    cancel: (id: string): Promise<PayrollRun> => this.request(`/api/v1/organisation/payroll/runs/${id}/cancel`, { method: "PATCH" }),
   };
 }

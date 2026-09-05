@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ForbiddenApiException, UnauthorizedApiException } from "../common/exceptions/api.exception";
 import { durationToSeconds } from "../common/utils/duration";
 import { RbacService } from "../rbac/rbac.service";
+import { OrganisationRbacService } from "../organisation-rbac/organisation-rbac.service";
 
 /**
  * Bcrypt hash of an arbitrary fixed string, never a real password. Compared
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly rbac: RbacService,
+    private readonly organisationRbac: OrganisationRbacService,
   ) {}
 
   async platformLogin(email: string, password: string, meta: { ip?: string; userAgent?: string }): Promise<AuthTokens> {
@@ -65,6 +67,49 @@ export class AuthService {
     });
 
     return this.issueTokens({ sub: user.id, scope: "platform" });
+  }
+
+  /**
+   * Email is unique PER-ORGANISATION, not globally, so login needs the
+   * organisation's slug too — otherwise there's no way to know which of
+   * potentially many "hr@company.com" accounts across different tenants is
+   * meant.
+   */
+  async organisationLogin(organisationSlug: string, email: string, password: string): Promise<AuthTokens> {
+    const organisation = await this.prisma.organisation.findUnique({ where: { slug: organisationSlug } });
+
+    // Deliberately still runs a bcrypt compare even when the organisation
+    // itself doesn't exist — same timing-safe-enumeration reasoning as
+    // platformLogin, just one level up (unknown org, unknown user, and
+    // wrong password all take the same amount of time and look identical).
+    const user = organisation
+      ? await this.prisma.organisationUser.findUnique({
+          where: { organisationId_email: { organisationId: organisation.id, email } },
+        })
+      : null;
+    const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? TIMING_SAFE_DUMMY_HASH);
+    if (!organisation || !user || !passwordMatches) {
+      throw new UnauthorizedApiException("Incorrect organisation, email or password", "INVALID_CREDENTIALS");
+    }
+
+    if (user.status !== "ACTIVE") {
+      throw new ForbiddenApiException("This account has been disabled. Contact your administrator.", "ACCOUNT_DISABLED");
+    }
+
+    await this.prisma.organisationUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        actorType: "ORGANISATION_USER",
+        organisationId: organisation.id,
+        action: "ORGANISATION_LOGIN_SUCCESS",
+        resourceType: "OrganisationUser",
+        resourceId: user.id,
+      },
+    });
+
+    return this.issueTokens({ sub: user.id, scope: "organisation", organisationId: organisation.id });
   }
 
   async refresh(rawRefreshToken: string): Promise<AuthTokens> {
@@ -118,7 +163,10 @@ export class AuthService {
     // (login or refresh), not re-checked per-request — a role change takes
     // effect on the user's next refresh, at most one access-token lifetime
     // later. Revisit if Phase 11 needs tighter revocation guarantees.
-    const rbac = claims.scope === "platform" ? await this.rbac.getUserRbac(claims.sub) : undefined;
+    const rbac =
+      claims.scope === "platform"
+        ? await this.rbac.getUserRbac(claims.sub)
+        : await this.organisationRbac.getUserRbac(claims.sub);
 
     const accessPayload: AccessTokenPayload = {
       sub: claims.sub,
@@ -154,6 +202,7 @@ export class AuthService {
         tokenHash,
         scope: claims.scope === "platform" ? "PLATFORM" : "ORGANISATION",
         platformUserId: claims.scope === "platform" ? claims.sub : undefined,
+        organisationUserId: claims.scope === "organisation" ? claims.sub : undefined,
         organisationId: claims.organisationId,
         expiresAt,
       },

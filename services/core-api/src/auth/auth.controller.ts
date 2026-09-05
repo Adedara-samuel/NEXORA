@@ -3,8 +3,10 @@ import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import {
   platformLoginSchema,
+  organisationLoginSchema,
   refreshTokenSchema,
   type PlatformLoginInput,
+  type OrganisationLoginInput,
   type RefreshTokenInput,
 } from "@nexora/validation";
 import { Public } from "../common/decorators/public.decorator";
@@ -26,6 +28,14 @@ export class AuthController {
     @Headers("user-agent") userAgent?: string,
   ) {
     return this.authService.platformLogin(body.email, body.password, { ip, userAgent });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post("organisation/login")
+  @HttpCode(HttpStatus.OK)
+  organisationLogin(@Body(new ZodValidationPipe(organisationLoginSchema)) body: OrganisationLoginInput) {
+    return this.authService.organisationLogin(body.organisationSlug, body.email, body.password);
   }
 
   @Public()

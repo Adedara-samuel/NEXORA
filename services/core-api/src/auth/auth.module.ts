@@ -8,10 +8,12 @@ import { AuthService } from "./auth.service";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RbacModule } from "../rbac/rbac.module";
+import { OrganisationRbacModule } from "../organisation-rbac/organisation-rbac.module";
 
 @Module({
   imports: [
     RbacModule,
+    OrganisationRbacModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

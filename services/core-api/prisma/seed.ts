@@ -23,6 +23,51 @@ const PERMISSIONS: { key: string; description: string; category: string }[] = [
   { key: "billing:manage_subscriptions", description: "Assign plans, renew and cancel organisation subscriptions", category: "billing" },
 ];
 
+/**
+ * Phase 4 org-side permission catalog. Global/seeded, same as PERMISSIONS
+ * above — a tenant can't invent new permission keys, only decide which of
+ * these each of THEIR OWN roles gets (see OrganisationRole).
+ */
+const ORGANISATION_PERMISSIONS: { key: string; description: string; category: string }[] = [
+  { key: "org_users:read", description: "View organisation users", category: "org_users" },
+  { key: "org_users:create", description: "Create organisation users", category: "org_users" },
+  { key: "org_users:update", description: "Update organisation users, including status and roles", category: "org_users" },
+  { key: "org_roles:read", description: "View organisation roles and permissions", category: "org_roles" },
+  { key: "org_roles:manage", description: "Create, edit and delete organisation roles", category: "org_roles" },
+  { key: "departments:read", description: "View departments", category: "departments" },
+  { key: "departments:manage", description: "Create departments", category: "departments" },
+  { key: "branches:read", description: "View branches", category: "branches" },
+  { key: "branches:manage", description: "Create branches", category: "branches" },
+  { key: "employees:read", description: "View employee records", category: "employees" },
+  { key: "employees:create", description: "Create employee records", category: "employees" },
+  { key: "employees:update", description: "Update employee records, including status", category: "employees" },
+  { key: "attendance:read", description: "View attendance records", category: "attendance" },
+  { key: "attendance:create", description: "Record attendance", category: "attendance" },
+  { key: "attendance:update", description: "Update attendance records", category: "attendance" },
+  { key: "leave:read", description: "View leave requests", category: "leave" },
+  { key: "leave:create", description: "Submit leave requests", category: "leave" },
+  { key: "leave:manage", description: "Approve, reject or cancel leave requests", category: "leave" },
+  { key: "payroll:read", description: "View payroll runs and payslips", category: "payroll" },
+  { key: "payroll:create", description: "Run payroll for a period", category: "payroll" },
+  { key: "payroll:manage_settings", description: "Configure tax bands and pension rate overrides", category: "payroll" },
+];
+
+/**
+ * Phase 5 (payroll) global PAYE tax-band catalog. Only Nigeria is seeded —
+ * reflects the Tax Act 2025 bands effective 2026-01-01, best-effort and NOT
+ * a substitute for professional tax advice. Any other country needs an
+ * OrganisationTaxSettings.customBands override before payroll can run
+ * (see docs/phase-5-payroll.md).
+ */
+const NG_TAX_BANDS: { order: number; upToMajor: number | null; ratePercent: number }[] = [
+  { order: 1, upToMajor: 800_000, ratePercent: 0 },
+  { order: 2, upToMajor: 3_000_000, ratePercent: 15 },
+  { order: 3, upToMajor: 12_000_000, ratePercent: 18 },
+  { order: 4, upToMajor: 25_000_000, ratePercent: 21 },
+  { order: 5, upToMajor: 50_000_000, ratePercent: 23 },
+  { order: 6, upToMajor: null, ratePercent: 25 },
+];
+
 /** Fixed module catalog — entries correspond to real business modules (Phase 5 onward). */
 const MODULES: { key: string; name: string; description: string }[] = [
   { key: "employees", name: "Employees", description: "Staff records and profiles" },
@@ -97,10 +142,28 @@ async function main(): Promise<void> {
   }
   console.log(`Seeded ${PERMISSIONS.length} platform permissions.`);
 
+  for (const permission of ORGANISATION_PERMISSIONS) {
+    await prisma.organisationPermission.upsert({
+      where: { key: permission.key },
+      update: { description: permission.description, category: permission.category },
+      create: permission,
+    });
+  }
+  console.log(`Seeded ${ORGANISATION_PERMISSIONS.length} organisation permissions.`);
+
   for (const module of MODULES) {
     await prisma.module.upsert({ where: { key: module.key }, update: { name: module.name, description: module.description }, create: module });
   }
   console.log(`Seeded ${MODULES.length} modules.`);
+
+  for (const band of NG_TAX_BANDS) {
+    await prisma.taxBand.upsert({
+      where: { countryCode_order: { countryCode: "NG", order: band.order } },
+      update: { upToMajor: band.upToMajor, ratePercent: band.ratePercent },
+      create: { countryCode: "NG", ...band },
+    });
+  }
+  console.log(`Seeded ${NG_TAX_BANDS.length} Nigeria tax bands.`);
 
   for (const planDef of PLANS) {
     const plan = await prisma.plan.upsert({

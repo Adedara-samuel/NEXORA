@@ -6,3 +6,8 @@ export * from "./organisation";
 export * from "./platform-user";
 export * from "./billing";
 export * from "./dashboard";
+export * from "./organisation-user";
+export * from "./employee";
+export * from "./attendance";
+export * from "./leave";
+export * from "./payroll";

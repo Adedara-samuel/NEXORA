@@ -1,15 +1,19 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
 import type {
   CreateOrganisationInput,
   ListOrganisationsQuery,
+  ProvisionOrganisationAdminInput,
   UpdateOrganisationInput,
   UpdateOrganisationStatusInput,
 } from "@nexora/validation";
-import type { Organisation, PaginatedResult, RecentActivityEntry } from "@nexora/types";
+import type { Organisation, OrganisationUser, PaginatedResult, RecentActivityEntry } from "@nexora/types";
 import type { Organisation as PrismaOrganisation, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConflictApiException, NotFoundApiException, ValidationApiException } from "../common/exceptions/api.exception";
 import { slugify } from "../common/utils/slugify";
+import { OrganisationRbacService } from "../organisation-rbac/organisation-rbac.service";
 
 /** Terminal/lifecycle rules for organisation status transitions. ARCHIVED is a dead end. */
 const ALLOWED_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -21,7 +25,11 @@ const ALLOWED_STATUS_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable()
 export class OrganisationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly organisationRbac: OrganisationRbacService,
+  ) {}
 
   async list(query: ListOrganisationsQuery): Promise<PaginatedResult<Organisation>> {
     const where: Prisma.OrganisationWhereInput = {
@@ -168,6 +176,63 @@ export class OrganisationsService {
       organisationId: log.organisationId,
       createdAt: log.createdAt.toISOString(),
     }));
+  }
+
+  /**
+   * Platform-initiated: an organisation has no org-side login at all until
+   * this runs, so it can't be self-service. Creates (or reuses) the org's
+   * SUPER_ADMIN role and assigns it to the new user.
+   */
+  async provisionAdmin(organisationId: string, input: ProvisionOrganisationAdminInput, actorId: string): Promise<OrganisationUser> {
+    const organisation = await this.prisma.organisation.findUnique({ where: { id: organisationId } });
+    if (!organisation) throw new NotFoundApiException("Organisation not found", "ORGANISATION_NOT_FOUND");
+
+    const existing = await this.prisma.organisationUser.findUnique({
+      where: { organisationId_email: { organisationId, email: input.email } },
+    });
+    if (existing) throw new ConflictApiException("A user with this email already exists in this organisation", "EMAIL_TAKEN");
+
+    const passwordHash = await bcrypt.hash(input.password, this.config.get<number>("BCRYPT_SALT_ROUNDS", 12));
+    const superAdminRole = await this.organisationRbac.ensureSuperAdminRole(organisationId);
+
+    const user = await this.prisma.organisationUser.create({
+      data: {
+        organisationId,
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        passwordHash,
+        roles: { create: { roleId: superAdminRole.id } },
+      },
+      include: { roles: { include: { role: true } } },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId,
+        actorType: "PLATFORM_USER",
+        organisationId,
+        action: "ORGANISATION_ADMIN_PROVISIONED",
+        resourceType: "OrganisationUser",
+        resourceId: user.id,
+        metadata: { email: user.email },
+      },
+    });
+
+    return {
+      id: user.id,
+      organisationId: user.organisationId,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      status: user.status,
+      roles: user.roles.map((userRole) => userRole.role.name),
+      departmentId: user.departmentId,
+      branchId: user.branchId,
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
   }
 
   private async uniqueSlugFrom(name: string): Promise<string> {

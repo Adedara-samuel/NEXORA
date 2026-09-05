@@ -34,6 +34,36 @@
 //   - Payments run through a swappable PaymentGateway interface — only a
 //     MockPaymentGateway exists until the real integration is built.
 //
+// Phase 4 (this change): organisation platform — org-side auth & admin.
+//   - OrganisationUser : identity for users inside a tenant organisation.
+//     Email is unique per-organisation, not globally (@@unique([organisationId, email])),
+//     so login requires the organisation's slug + email + password, not
+//     email alone — see AuthController.organisationLogin.
+//   - OrganisationPermission / OrganisationRole / OrganisationRolePermission /
+//     OrganisationUserRole : the exact same RBAC shape as the platform side
+//     (Phase 2), but every role is scoped to one organisation
+//     (@@unique([organisationId, name])) — tenants define their own roles,
+//     they don't share a global catalog like platform roles do.
+//   - Every org-scoped OrganisationsRbacModule/OrganisationUsersModule/
+//     DepartmentsModule/BranchesModule endpoint derives organisationId from
+//     the caller's own JWT (@CurrentOrganisationId()), never from a URL
+//     param — that's the tenant-isolation boundary. The one exception is
+//     provisioning an organisation's first admin account
+//     (POST /organisations/:id/admin), which is platform-initiated by
+//     design (no org user exists yet to self-serve with).
+//   - Department / Branch : simple org-structure entities an OrganisationUser
+//     can belong to.
+//
+// Phase 5 (this change, first slice — Employees): business modules.
+//   - Employee : an HR record, deliberately SEPARATE from OrganisationUser —
+//     not every employee has (or needs) a login account, and not every
+//     OrganisationUser is necessarily an employee (could be a contractor
+//     with admin access, etc.). `organisationUserId` is an optional link
+//     for the case where an employee also has system access.
+//   - Attendance / Leave / Documents / Compliance / Payroll are the
+//     remaining Phase 5 sub-modules — not built yet, each needs Employee to
+//     exist first, which is why it's the first slice.
+//
 // Every later phase ADDS models here — this file is never treated as final.
 
 generator client {
@@ -81,6 +111,17 @@ enum InvoiceStatus {
   PENDING
   PAID
   FAILED
+}
+
+enum OrganisationUserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
 }
 
 model PlatformUser {
@@ -167,6 +208,11 @@ model Organisation {
   contactEmail String
   contactPhone String?
   industry     String?
+  /// ISO 3166-1 alpha-2 country code — picks which TaxBand catalog applies
+  /// to this organisation's payroll by default (see docs/phase-5-payroll.md).
+  /// Only "NG" has seeded bands so far; any other country needs
+  /// OrganisationTaxSettings.customBands set before payroll can run.
+  countryCode  String             @default("NG")
   createdById  String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -175,6 +221,16 @@ model Organisation {
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
   subscription  Subscription?
+  users         OrganisationUser[]
+  roles         OrganisationRole[]
+  departments   Department[]
+  branches      Branch[]
+  employees     Employee[]
+  attendanceRecords Attendance[]
+  leaveRequests LeaveRequest[]
+  taxSettings   OrganisationTaxSettings?
+  payrollRuns   PayrollRun[]
+  payslips      Payslip[]
 
   @@index([status])
   @@map("organisations")
@@ -267,24 +323,355 @@ model Invoice {
   @@map("invoices")
 }
 
+/// Identity for users inside a tenant organisation. Email is unique
+/// PER-ORGANISATION, not globally (@@unique([organisationId, email])) — two
+/// different organisations can each have a "hr@company.com" user, so login
+/// needs the organisation's slug + email + password, not email alone.
+model OrganisationUser {
+  id             String                 @id @default(uuid())
+  organisationId String
+  email          String
+  passwordHash   String
+  firstName      String
+  lastName       String
+  status         OrganisationUserStatus @default(ACTIVE)
+  departmentId   String?
+  branchId       String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  organisation  Organisation           @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  department    Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  branch        Branch?                @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  roles         OrganisationUserRole[]
+  refreshTokens RefreshToken[]
+  employee      Employee?
+  approvedLeaveRequests LeaveRequest[]
+
+  @@unique([organisationId, email])
+  @@index([organisationId])
+  @@map("organisation_users")
+}
+
+/// The org-side RBAC catalog — same shape as PlatformPermission (Phase 2),
+/// but fixed/seeded globally (permission keys are code-defined, checked by
+/// @RequirePermissions(...) in every org-scoped controller — not something
+/// a tenant can invent). What tenants DO define themselves is which
+/// permissions each of their OWN roles gets (see OrganisationRole).
+model OrganisationPermission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String
+  category    String
+  createdAt   DateTime @default(now())
+
+  roles OrganisationRolePermission[]
+
+  @@map("organisation_permissions")
+}
+
+/// Unlike PlatformRole (one global catalog), every OrganisationRole belongs
+/// to exactly one Organisation (@@unique([organisationId, name])) — tenants
+/// define their own roles from the shared OrganisationPermission catalog.
+/// isSystem roles (seeded per-org on first use: SUPER_ADMIN) can't be
+/// deleted via the API.
+model OrganisationRole {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  description    String?
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  permissions  OrganisationRolePermission[]
+  users        OrganisationUserRole[]
+
+  @@unique([organisationId, name])
+  @@index([organisationId])
+  @@map("organisation_roles")
+}
+
+model OrganisationRolePermission {
+  roleId       String
+  permissionId String
+
+  role       OrganisationRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission OrganisationPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("organisation_role_permissions")
+}
+
+model OrganisationUserRole {
+  organisationUserId String
+  roleId             String
+  assignedAt         DateTime @default(now())
+
+  organisationUser OrganisationUser @relation(fields: [organisationUserId], references: [id], onDelete: Cascade)
+  role             OrganisationRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([organisationUserId, roleId])
+  @@map("organisation_user_roles")
+}
+
+model Department {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  users        OrganisationUser[]
+  employees    Employee[]
+
+  @@unique([organisationId, name])
+  @@map("departments")
+}
+
+model Branch {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  address        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  users        OrganisationUser[]
+  employees    Employee[]
+
+  @@unique([organisationId, name])
+  @@map("branches")
+}
+
+/// An HR record — deliberately separate from OrganisationUser (see Phase 5
+/// header comment). employeeNumber is unique per-organisation, not globally.
+model Employee {
+  id                 String         @id @default(uuid())
+  organisationId     String
+  employeeNumber     String
+  firstName          String
+  lastName           String
+  email              String?
+  phone              String?
+  position           String?
+  departmentId       String?
+  branchId           String?
+  organisationUserId String?        @unique
+  status             EmployeeStatus @default(ACTIVE)
+  hireDate           DateTime
+  terminationDate    DateTime?
+  /// Monthly base salary in minor currency units — nullable until payroll
+  /// (later in Phase 5) actually needs it; not every employee record is
+  /// created with salary info up front.
+  salaryMinor        Int?
+  currency           String         @default("NGN")
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  organisation     Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  department       Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  branch           Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  organisationUser OrganisationUser? @relation(fields: [organisationUserId], references: [id], onDelete: SetNull)
+  attendanceRecords Attendance[]
+  leaveRequests     LeaveRequest[]
+  payslips          Payslip[]
+
+  @@unique([organisationId, employeeNumber])
+  @@index([organisationId])
+  @@map("employees")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+}
+
+/// One row per employee per calendar day. clockInAt/clockOutAt are optional —
+/// a manually-entered ABSENT record has neither.
+model Attendance {
+  id             String           @id @default(uuid())
+  organisationId String
+  employeeId     String
+  date           DateTime         @db.Date
+  status         AttendanceStatus @default(PRESENT)
+  clockInAt      DateTime?
+  clockOutAt     DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([organisationId])
+  @@map("attendance_records")
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// approvedById references OrganisationUser (the account that actioned the
+/// request), not Employee — an employee without system access can still be
+/// the *subject* of a leave request, but only a logged-in user can approve one.
+model LeaveRequest {
+  id              String      @id @default(uuid())
+  organisationId  String
+  employeeId      String
+  leaveType       LeaveType
+  startDate       DateTime    @db.Date
+  endDate         DateTime    @db.Date
+  reason          String?
+  status          LeaveStatus @default(PENDING)
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  organisation Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedBy   OrganisationUser? @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([organisationId, employeeId])
+  @@map("leave_requests")
+}
+
+/// Global, code-curated PAYE tax-band catalog per country — NOT
+/// tenant-editable directly (see OrganisationTaxSettings for the per-org
+/// override path). Only "NG" is seeded today, reflecting Nigeria's Tax Act
+/// 2025 bands effective 2026-01-01: best-effort, not a substitute for
+/// professional tax advice — verify against current FIRS guidance before
+/// relying on this for real payroll. Thresholds are ANNUAL, in whole
+/// currency units (not minor units) so the top band (₦50,000,000) fits an
+/// Int32 column; `upToMajor: null` marks the open-ended top band.
+model TaxBand {
+  id          String  @id @default(uuid())
+  countryCode String
+  order       Int
+  upToMajor   Int?
+  ratePercent Int
+
+  @@unique([countryCode, order])
+  @@map("tax_bands")
+}
+
+/// Per-organisation override of the global TaxBand catalog — this is the
+/// "every organisation can always correct theirs" mechanism. When
+/// `customBands` is set it fully replaces the country default; otherwise
+/// payroll falls back to TaxBand rows for Organisation.countryCode.
+model OrganisationTaxSettings {
+  id                  String   @id @default(uuid())
+  organisationId      String   @unique
+  /// [{ "upToMajor": number|null, "ratePercent": number }, ...] ascending, last entry upToMajor: null
+  customBands         Json?
+  /// Statutory employee pension contribution, whole percent. Null = use the
+  /// platform default for the country (8% for Nigeria, Pension Reform Act).
+  pensionRatePercent  Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@map("organisation_tax_settings")
+}
+
+enum PayrollRunStatus {
+  COMPLETED
+  CANCELLED
+}
+
+/// One run per organisation per calendar month. Once COMPLETED a run's
+/// payslips are immutable — correcting a mistake means CANCELLED + a fresh
+/// run, never editing figures in place (same immutability principle as
+/// SAPOK Pay's ledger).
+model PayrollRun {
+  id                   String           @id @default(uuid())
+  organisationId       String
+  periodYear           Int
+  periodMonth          Int
+  status               PayrollRunStatus @default(COMPLETED)
+  currency             String           @default("NGN")
+  totalGrossMinor      Int              @default(0)
+  totalDeductionsMinor Int              @default(0)
+  totalNetMinor        Int              @default(0)
+  skippedEmployeeCount Int              @default(0)
+  createdById          String?
+  createdAt            DateTime         @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  payslips     Payslip[]
+
+  @@unique([organisationId, periodYear, periodMonth])
+  @@index([organisationId])
+  @@map("payroll_runs")
+}
+
+model Payslip {
+  id                   String   @id @default(uuid())
+  payrollRunId         String
+  organisationId       String
+  employeeId           String
+  grossMinor           Int
+  pensionMinor         Int      @default(0)
+  payeMinor            Int      @default(0)
+  otherDeductionsMinor Int      @default(0)
+  netMinor             Int
+  currency             String
+  /// Computation trail for auditability: { annualGrossMajor, annualTaxableMajor, bandsApplied: [...] }
+  breakdown            Json
+  createdAt            DateTime @default(now())
+
+  payrollRun   PayrollRun   @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollRunId, employeeId])
+  @@index([organisationId])
+  @@map("payslips")
+}
+
 /// Refresh tokens are stored as a hash (never the raw token) so a leaked
 /// database dump cannot be used to mint sessions. Rotation: each refresh
 /// issues a new token and revokes the previous one via `revokedAt`.
 model RefreshToken {
-  id             String    @id @default(uuid())
-  jti            String    @unique
-  tokenHash      String
-  scope          AuthScope
-  platformUserId String?
-  organisationId String?
-  expiresAt      DateTime
-  revokedAt      DateTime?
-  createdAt      DateTime  @default(now())
+  id                 String    @id @default(uuid())
+  jti                String    @unique
+  tokenHash          String
+  scope              AuthScope
+  platformUserId     String?
+  organisationId     String?
+  organisationUserId String?
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  createdAt          DateTime  @default(now())
 
-  platformUser PlatformUser?  @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
-  organisation Organisation?  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  platformUser     PlatformUser?     @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+  organisation     Organisation?     @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationUser OrganisationUser? @relation(fields: [organisationUserId], references: [id], onDelete: Cascade)
 
   @@index([platformUserId])
+  @@index([organisationUserId])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }

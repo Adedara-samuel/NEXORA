@@ -3,10 +3,12 @@ import { ApiTags } from "@nestjs/swagger";
 import {
   createOrganisationSchema,
   listOrganisationsQuerySchema,
+  provisionOrganisationAdminSchema,
   updateOrganisationSchema,
   updateOrganisationStatusSchema,
   type CreateOrganisationInput,
   type ListOrganisationsQuery,
+  type ProvisionOrganisationAdminInput,
   type UpdateOrganisationInput,
   type UpdateOrganisationStatusInput,
 } from "@nexora/validation";
@@ -68,5 +70,20 @@ export class OrganisationsController {
     @CurrentUser() actor: AccessTokenPayload,
   ) {
     return this.organisations.updateStatus(id, body, actor.sub);
+  }
+
+  /**
+   * Platform-initiated by design — an organisation has no self-service auth
+   * at all until this creates its first admin user, so there's no org user
+   * yet to have provisioned this themselves.
+   */
+  @RequirePermissions("organisations:update")
+  @Post(":id/admin")
+  provisionAdmin(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(provisionOrganisationAdminSchema)) body: ProvisionOrganisationAdminInput,
+    @CurrentUser() actor: AccessTokenPayload,
+  ) {
+    return this.organisations.provisionAdmin(id, body, actor.sub);
   }
 }

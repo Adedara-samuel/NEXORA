@@ -12,6 +12,13 @@ import { PlatformUsersModule } from "./platform-users/platform-users.module";
 import { OrganisationsModule } from "./organisations/organisations.module";
 import { BillingModule } from "./billing/billing.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { OrganisationRbacModule } from "./organisation-rbac/organisation-rbac.module";
+import { OrganisationUsersModule } from "./organisation-users/organisation-users.module";
+import { OrganisationStructureModule } from "./organisation-structure/organisation-structure.module";
+import { EmployeesModule } from "./employees/employees.module";
+import { AttendanceModule } from "./attendance/attendance.module";
+import { LeaveModule } from "./leave/leave.module";
+import { PayrollModule } from "./payroll/payroll.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
@@ -34,6 +41,13 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     OrganisationsModule,
     BillingModule,
     DashboardModule,
+    OrganisationRbacModule,
+    OrganisationUsersModule,
+    OrganisationStructureModule,
+    EmployeesModule,
+    AttendanceModule,
+    LeaveModule,
+    PayrollModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
