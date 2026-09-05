@@ -7,6 +7,9 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { HealthModule } from "./health/health.module";
 import { AuthModule } from "./auth/auth.module";
+import { RbacModule } from "./rbac/rbac.module";
+import { PlatformUsersModule } from "./platform-users/platform-users.module";
+import { OrganisationsModule } from "./organisations/organisations.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
@@ -24,6 +27,9 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     RedisModule,
     HealthModule,
     AuthModule,
+    RbacModule,
+    PlatformUsersModule,
+    OrganisationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

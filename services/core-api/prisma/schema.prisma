@@ -1,16 +1,21 @@
 // NEXORA Core API — Prisma schema
 //
-// Phase 1 (Foundation) scope: only the tables required to prove out the
-// authentication foundation and audit logging exist here.
-//
+// Phase 1 (Foundation): auth foundation + audit logging.
 //   - PlatformUser   : identity for NEXORA Control Center operators.
-//                      Platform roles/permissions land in Phase 2 as a
-//                      proper RBAC join (PlatformRole/PlatformPermission),
-//                      so no role column is hardcoded here.
 //   - RefreshToken   : hashed, rotating refresh tokens for both auth scopes
 //                      (platform now; organisation from Phase 4 onward).
 //   - AuditLog       : generic append-only audit trail (section 58), used
 //                      from the very first login event onward.
+//
+// Phase 2 (this change): platform RBAC + organisation management/onboarding.
+//   - PlatformPermission / PlatformRole / PlatformRolePermission /
+//     PlatformUserRole : the RBAC join promised in Phase 1 — permissions are
+//     grouped into roles, roles are assigned to platform users (many-to-many
+//     both ways, so a user can hold more than one role).
+//   - Organisation    : the platform-managed shell record created during
+//     onboarding. Subscriptions/billing (Phase 3) and organisation-side
+//     auth/admin (Phase 4) attach to this later — this phase only owns
+//     identity + lifecycle status.
 //
 // Every later phase ADDS models here — this file is never treated as final.
 
@@ -33,6 +38,13 @@ enum PlatformUserStatus {
   DISABLED
 }
 
+enum OrganisationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
 model PlatformUser {
   id           String              @id @default(uuid())
   email        String              @unique
@@ -44,9 +56,89 @@ model PlatformUser {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
-  refreshTokens RefreshToken[]
+  refreshTokens         RefreshToken[]
+  roles                 PlatformUserRole[]
+  organisationsCreated  Organisation[]
 
   @@map("platform_users")
+}
+
+/// One platform-wide permission, e.g. "organisations:create". Permissions are
+/// never assigned to users directly — only via a PlatformRole.
+model PlatformPermission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String
+  /// Groups permissions for UI display (e.g. "organisations", "platform_users").
+  category    String
+  createdAt   DateTime @default(now())
+
+  roles PlatformRolePermission[]
+
+  @@map("platform_permissions")
+}
+
+/// A named bundle of permissions assignable to platform users. isSystem roles
+/// (seeded: SUPER_ADMIN, SUPPORT, FINANCE) can't be deleted via the API —
+/// only their assignment to users changes.
+model PlatformRole {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions PlatformRolePermission[]
+  users       PlatformUserRole[]
+
+  @@map("platform_roles")
+}
+
+model PlatformRolePermission {
+  roleId       String
+  permissionId String
+
+  role       PlatformRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission PlatformPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("platform_role_permissions")
+}
+
+model PlatformUserRole {
+  platformUserId String
+  roleId         String
+  assignedAt     DateTime @default(now())
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+  role         PlatformRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([platformUserId, roleId])
+  @@map("platform_user_roles")
+}
+
+/// The platform-managed shell record for a tenant organisation, created
+/// during onboarding. Deliberately thin at this phase — no subscription,
+/// billing or org-admin-account fields here; those attach in Phase 3/4.
+model Organisation {
+  id           String             @id @default(uuid())
+  name         String
+  slug         String             @unique
+  status       OrganisationStatus @default(PENDING)
+  contactEmail String
+  contactPhone String?
+  industry     String?
+  createdById  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  createdBy     PlatformUser?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@index([status])
+  @@map("organisations")
 }
 
 /// Refresh tokens are stored as a hash (never the raw token) so a leaked
@@ -63,7 +155,8 @@ model RefreshToken {
   revokedAt      DateTime?
   createdAt      DateTime  @default(now())
 
-  platformUser PlatformUser? @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+  platformUser PlatformUser?  @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+  organisation Organisation?  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@index([platformUserId])
   @@index([expiresAt])
@@ -86,6 +179,8 @@ model AuditLog {
   ipAddress      String?
   userAgent      String?
   createdAt      DateTime @default(now())
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
 
   @@index([organisationId])
   @@index([action])

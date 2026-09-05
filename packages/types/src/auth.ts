@@ -10,6 +10,10 @@ export interface AccessTokenPayload {
   scope: AuthScope;
   /** Present only for scope = "organisation" */
   organisationId?: string;
+  /** Platform role names held by this user. Present only for scope = "platform". */
+  roles?: string[];
+  /** Flattened permission keys granted by `roles`. Present only for scope = "platform". */
+  permissions?: string[];
   tokenType: "access";
   iat?: number;
   exp?: number;

@@ -7,6 +7,7 @@ import type { AccessTokenPayload, AuthTokens, RefreshTokenPayload } from "@nexor
 import { PrismaService } from "../prisma/prisma.service";
 import { ForbiddenApiException, UnauthorizedApiException } from "../common/exceptions/api.exception";
 import { durationToSeconds } from "../common/utils/duration";
+import { RbacService } from "../rbac/rbac.service";
 
 /**
  * Bcrypt hash of an arbitrary fixed string, never a real password. Compared
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly rbac: RbacService,
   ) {}
 
   async platformLogin(email: string, password: string, meta: { ip?: string; userAgent?: string }): Promise<AuthTokens> {
@@ -112,10 +114,18 @@ export class AuthService {
     const refreshExpiresIn = this.config.get<string>("JWT_REFRESH_EXPIRES_IN", "7d");
     const jti = randomUUID();
 
+    // Roles/permissions are snapshotted into the access token at issuance time
+    // (login or refresh), not re-checked per-request — a role change takes
+    // effect on the user's next refresh, at most one access-token lifetime
+    // later. Revisit if Phase 11 needs tighter revocation guarantees.
+    const rbac = claims.scope === "platform" ? await this.rbac.getUserRbac(claims.sub) : undefined;
+
     const accessPayload: AccessTokenPayload = {
       sub: claims.sub,
       scope: claims.scope,
       organisationId: claims.organisationId,
+      roles: rbac?.roles,
+      permissions: rbac?.permissions,
       tokenType: "access",
     };
     const refreshPayload: RefreshTokenPayload = {
