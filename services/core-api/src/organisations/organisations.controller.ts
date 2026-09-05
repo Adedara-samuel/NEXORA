@@ -35,6 +35,12 @@ export class OrganisationsController {
     return this.organisations.findById(id);
   }
 
+  @RequirePermissions("organisations:read")
+  @Get(":id/audit-log")
+  listAuditLog(@Param("id") id: string) {
+    return this.organisations.listAuditLog(id);
+  }
+
   @RequirePermissions("organisations:create")
   @Post()
   create(

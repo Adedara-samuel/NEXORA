@@ -5,7 +5,7 @@ import type {
   UpdateOrganisationInput,
   UpdateOrganisationStatusInput,
 } from "@nexora/validation";
-import type { Organisation, PaginatedResult } from "@nexora/types";
+import type { Organisation, PaginatedResult, RecentActivityEntry } from "@nexora/types";
 import type { Organisation as PrismaOrganisation, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConflictApiException, NotFoundApiException, ValidationApiException } from "../common/exceptions/api.exception";
@@ -149,6 +149,25 @@ export class OrganisationsService {
     });
 
     return this.toOrganisation(organisation);
+  }
+
+  async listAuditLog(id: string): Promise<RecentActivityEntry[]> {
+    const existing = await this.prisma.organisation.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundApiException("Organisation not found", "ORGANISATION_NOT_FOUND");
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: { organisationId: id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return logs.map((log) => ({
+      id: log.id,
+      action: log.action,
+      resourceType: log.resourceType,
+      resourceId: log.resourceId,
+      organisationId: log.organisationId,
+      createdAt: log.createdAt.toISOString(),
+    }));
   }
 
   private async uniqueSlugFrom(name: string): Promise<string> {

@@ -1,23 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import type { Organisation, OrganisationStatus, SubscriptionStatus } from "@nexora/types";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, useToast } from "@nexora/ui";
+import { ChevronRight, Plus } from "lucide-react";
+import type { Organisation, OrganisationStatus } from "@nexora/types";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Reveal, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
+import { SubscriptionPanel } from "@/components/subscription-panel";
 import { apiClient } from "@/lib/api-client";
-import { formatMoney } from "@/lib/format";
 import { useAuthStore } from "@/store/auth-store";
-
-const SUBSCRIPTION_STATUS_VARIANT: Record<SubscriptionStatus, "default" | "success" | "danger" | "outline"> = {
-  TRIALING: "outline",
-  ACTIVE: "success",
-  GRACE_PERIOD: "default",
-  SUSPENDED: "danger",
-  CANCELLED: "outline",
-};
 
 const STATUS_VARIANT: Record<OrganisationStatus, "default" | "success" | "danger" | "outline"> = {
   PENDING: "outline",
@@ -48,12 +41,16 @@ export default function OrganisationsPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div>
+        <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Organisations</h1>
-          <p className="text-sm text-muted-foreground">Onboard and manage every organisation on the platform.</p>
-        </div>
+          <p className="text-sm text-muted-foreground">Onboard organisations here — click one for its full profile, subscription and history.</p>
+        </Reveal>
 
-        {hasPermission("organisations:create") && <CreateOrganisationForm />}
+        {hasPermission("organisations:create") && (
+          <Reveal delayMs={60}>
+            <CreateOrganisationForm />
+          </Reveal>
+        )}
         <OrganisationsList
           canManageStatus={hasPermission("organisations:manage_status")}
           canReadBilling={hasPermission("billing:read")}
@@ -204,18 +201,15 @@ function OrganisationRow({
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle className="flex items-center gap-2">
+        <Link href={`/organisations/${organisation.id}`} className="group min-w-0 flex-1">
+          <CardTitle className="flex items-center gap-2 group-hover:text-primary">
             {organisation.name}
             <Badge variant={STATUS_VARIANT[organisation.status]}>{organisation.status}</Badge>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </CardTitle>
-          <CardDescription>
-            {organisation.contactEmail}
-            {organisation.contactPhone ? ` · ${organisation.contactPhone}` : ""}
-            {organisation.industry ? ` · ${organisation.industry}` : ""}
-          </CardDescription>
+          <CardDescription>{organisation.contactEmail}</CardDescription>
           <p className="mt-1 text-xs text-muted-foreground">/{organisation.slug}</p>
-        </div>
+        </Link>
         {canManageStatus && (
           <div className="flex shrink-0 gap-2">
             {NEXT_STATUS_ACTIONS[organisation.status].map((action) => (
@@ -232,119 +226,5 @@ function OrganisationRow({
         </CardContent>
       )}
     </Card>
-  );
-}
-
-function SubscriptionPanel({ organisationId, canManage }: { organisationId: string; canManage: boolean }) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-
-  const plansQuery = useQuery({ queryKey: ["billing-plans"], queryFn: () => apiClient.billing.listPlans() });
-  const subscriptionQuery = useQuery({
-    queryKey: ["subscription", organisationId],
-    queryFn: () => apiClient.billing.getSubscription(organisationId),
-    retry: false,
-  });
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["subscription", organisationId] });
-    queryClient.invalidateQueries({ queryKey: ["organisations"] });
-  };
-
-  const assignMutation = useMutation({
-    mutationFn: () => apiClient.billing.createSubscription(organisationId, { planId: selectedPlanId, status: "ACTIVE" }),
-    onSuccess: () => {
-      toast({ variant: "success", title: "Subscription assigned" });
-      invalidate();
-    },
-    onError: (error) => {
-      const message = error instanceof NexoraApiError ? error.message : "Could not assign subscription.";
-      toast({ variant: "error", title: "Assignment failed", description: message });
-    },
-  });
-
-  const renewMutation = useMutation({
-    mutationFn: (simulateFailure: boolean) => apiClient.billing.renewSubscription(organisationId, { simulateFailure }),
-    onSuccess: ({ invoice }) => {
-      if (invoice.status === "PAID") {
-        toast({ variant: "success", title: "Renewed", description: `Receipt ${invoice.receiptNumber} — ${formatMoney(invoice.amountMinor, invoice.currency)}` });
-      } else {
-        toast({ variant: "warning", title: "Renewal failed", description: invoice.failureReason ?? undefined });
-      }
-      invalidate();
-    },
-    onError: (error) => {
-      const message = error instanceof NexoraApiError ? error.message : "Could not process renewal.";
-      toast({ variant: "error", title: "Renewal error", description: message });
-    },
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: () => apiClient.billing.cancelSubscription(organisationId),
-    onSuccess: () => {
-      toast({ variant: "success", title: "Subscription cancelled" });
-      invalidate();
-    },
-    onError: (error) => {
-      const message = error instanceof NexoraApiError ? error.message : "Could not cancel subscription.";
-      toast({ variant: "error", title: "Cancellation failed", description: message });
-    },
-  });
-
-  const notFound = subscriptionQuery.isError && subscriptionQuery.error instanceof NexoraApiError && subscriptionQuery.error.code === "SUBSCRIPTION_NOT_FOUND";
-
-  if (subscriptionQuery.isLoading) return <p className="text-xs text-muted-foreground">Loading subscription…</p>;
-
-  if (notFound) {
-    if (!canManage) return <p className="text-xs text-muted-foreground">No subscription assigned.</p>;
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={selectedPlanId}
-          onChange={(event) => setSelectedPlanId(event.target.value)}
-          className="h-9 rounded-md border border-border bg-background/60 px-2 text-sm text-foreground"
-        >
-          <option value="">Select a plan…</option>
-          {plansQuery.data?.map((plan) => (
-            <option key={plan.id} value={plan.id}>
-              {plan.name} — {formatMoney(plan.priceMinor, plan.currency)}
-            </option>
-          ))}
-        </select>
-        <Button size="sm" disabled={!selectedPlanId || assignMutation.isPending} onClick={() => assignMutation.mutate()}>
-          Assign subscription
-        </Button>
-      </div>
-    );
-  }
-
-  if (subscriptionQuery.isError || !subscriptionQuery.data) {
-    return <p className="text-xs text-danger">Could not load subscription.</p>;
-  }
-
-  const subscription = subscriptionQuery.data;
-  const plan = plansQuery.data?.find((p) => p.id === subscription.planId);
-
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Badge variant={SUBSCRIPTION_STATUS_VARIANT[subscription.status]}>{subscription.status}</Badge>
-      <span className="text-xs text-muted-foreground">
-        {plan?.name ?? "Unknown plan"} · renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-      </span>
-      {canManage && subscription.status !== "CANCELLED" && (
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={renewMutation.isPending} onClick={() => renewMutation.mutate(false)}>
-            Renew
-          </Button>
-          <Button size="sm" variant="outline" disabled={renewMutation.isPending} onClick={() => renewMutation.mutate(true)}>
-            Renew (simulate failure)
-          </Button>
-          <Button size="sm" variant="destructive" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate()}>
-            Cancel
-          </Button>
-        </div>
-      )}
-    </div>
   );
 }

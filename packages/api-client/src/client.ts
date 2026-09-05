@@ -9,6 +9,7 @@ import type {
   Permission,
   Plan,
   PlatformUser,
+  RecentActivityEntry,
   Role,
   Subscription,
 } from "@nexora/types";
@@ -152,6 +153,8 @@ export class NexoraApiClient {
 
     updateStatus: (id: string, input: UpdateOrganisationStatusInput): Promise<Organisation> =>
       this.request(`/api/v1/organisations/${id}/status`, { method: "PATCH", body: JSON.stringify(input) }),
+
+    listAuditLog: (id: string): Promise<RecentActivityEntry[]> => this.request(`/api/v1/organisations/${id}/audit-log`),
   };
 
   billing = {
