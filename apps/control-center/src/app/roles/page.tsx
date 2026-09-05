@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import type { Permission, Role } from "@nexora/types";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, useToast } from "@nexora/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, Reveal, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
 import { apiClient } from "@/lib/api-client";
@@ -16,15 +16,19 @@ export default function RolesPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div>
+        <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Platform Roles</h1>
           <p className="text-sm text-muted-foreground">
             A role is a named bundle of permissions. Assigning a role to a platform user determines exactly which
             menus and actions they can see — nothing more.
           </p>
-        </div>
+        </Reveal>
 
-        {hasPermission("platform_roles:manage") && <CreateRoleForm />}
+        {hasPermission("platform_roles:manage") && (
+          <Reveal delayMs={60}>
+            <CreateRoleForm />
+          </Reveal>
+        )}
         <RolesList canManage={hasPermission("platform_roles:manage")} />
       </div>
     </AppShell>
@@ -141,8 +145,10 @@ function RolesList({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {rolesQuery.data?.map((role) => (
-        <RoleRow key={role.id} role={role} canManage={canManage} />
+      {rolesQuery.data?.map((role, index) => (
+        <Reveal key={role.id} delayMs={Math.min(index * 40, 320)}>
+          <RoleRow role={role} canManage={canManage} />
+        </Reveal>
       ))}
     </div>
   );

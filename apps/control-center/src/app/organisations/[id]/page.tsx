@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import type { OrganisationStatus } from "@nexora/types";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, useToast } from "@nexora/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Reveal, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
 import { SubscriptionPanel } from "@/components/subscription-panel";
@@ -83,7 +83,7 @@ export default function OrganisationDetailPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div>
+        <Reveal>
           <Link href="/organisations" className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             Organisations
@@ -110,24 +110,34 @@ export default function OrganisationDetailPage() {
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">/{organisation.slug}</p>
-        </div>
+        </Reveal>
 
-        <ProfileCard organisationId={organisationId} canEdit={hasPermission("organisations:update")} />
+        <Reveal delayMs={60}>
+          <ProfileCard organisationId={organisationId} canEdit={hasPermission("organisations:update")} />
+        </Reveal>
 
         {hasPermission("billing:read") && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SubscriptionPanel organisationId={organisationId} canManage={hasPermission("billing:manage_subscriptions")} />
-            </CardContent>
-          </Card>
+          <Reveal delayMs={120}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SubscriptionPanel organisationId={organisationId} canManage={hasPermission("billing:manage_subscriptions")} />
+              </CardContent>
+            </Card>
+          </Reveal>
         )}
 
-        {hasPermission("billing:read") && <InvoiceHistory organisationId={organisationId} />}
+        {hasPermission("billing:read") && (
+          <Reveal delayMs={180}>
+            <InvoiceHistory organisationId={organisationId} />
+          </Reveal>
+        )}
 
-        <ActivityHistory organisationId={organisationId} />
+        <Reveal delayMs={240}>
+          <ActivityHistory organisationId={organisationId} />
+        </Reveal>
       </div>
     </AppShell>
   );

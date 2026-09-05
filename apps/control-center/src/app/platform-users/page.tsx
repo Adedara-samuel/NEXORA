@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import type { PlatformUser } from "@nexora/types";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, useToast } from "@nexora/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, Reveal, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
 import { apiClient } from "@/lib/api-client";
@@ -16,12 +16,16 @@ export default function PlatformUsersPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div>
+        <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Platform Users</h1>
           <p className="text-sm text-muted-foreground">Control Center operators and the roles assigned to them.</p>
-        </div>
+        </Reveal>
 
-        {hasPermission("platform_users:create") && <CreateUserForm />}
+        {hasPermission("platform_users:create") && (
+          <Reveal delayMs={60}>
+            <CreateUserForm />
+          </Reveal>
+        )}
         <UsersList canManage={hasPermission("platform_users:update")} />
       </div>
     </AppShell>
@@ -129,8 +133,10 @@ function UsersList({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {usersQuery.data?.items.map((user) => (
-        <UserRow key={user.id} user={user} canManage={canManage} />
+      {usersQuery.data?.items.map((user, index) => (
+        <Reveal key={user.id} delayMs={Math.min(index * 40, 320)}>
+          <UserRow user={user} canManage={canManage} />
+        </Reveal>
       ))}
     </div>
   );

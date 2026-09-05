@@ -168,16 +168,17 @@ function OrganisationsList({
 
   return (
     <div className="flex flex-col gap-3">
-      {organisations.map((organisation) => (
-        <OrganisationRow
-          key={organisation.id}
-          organisation={organisation}
-          canManageStatus={canManageStatus}
-          canReadBilling={canReadBilling}
-          canManageSubscriptions={canManageSubscriptions}
-          onChangeStatus={(status) => statusMutation.mutate({ id: organisation.id, status })}
-          pending={statusMutation.isPending}
-        />
+      {organisations.map((organisation, index) => (
+        <Reveal key={organisation.id} delayMs={Math.min(index * 40, 320)}>
+          <OrganisationRow
+            organisation={organisation}
+            canManageStatus={canManageStatus}
+            canReadBilling={canReadBilling}
+            canManageSubscriptions={canManageSubscriptions}
+            onChangeStatus={(status) => statusMutation.mutate({ id: organisation.id, status })}
+            pending={statusMutation.isPending}
+          />
+        </Reveal>
       ))}
     </div>
   );

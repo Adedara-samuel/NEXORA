@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import type { BillingCycle } from "@nexora/types";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, useToast } from "@nexora/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, Reveal, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
 import { apiClient } from "@/lib/api-client";
@@ -17,15 +17,19 @@ export default function BillingPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div>
+        <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Billing</h1>
           <p className="text-sm text-muted-foreground">
             Plans and the modules each one unlocks. Payments run through a mock gateway until the real integration
             is wired in — every renewal here is simulated.
           </p>
-        </div>
+        </Reveal>
 
-        {hasPermission("billing:manage_plans") && <CreatePlanForm />}
+        {hasPermission("billing:manage_plans") && (
+          <Reveal delayMs={60}>
+            <CreatePlanForm />
+          </Reveal>
+        )}
         <PlansList />
       </div>
     </AppShell>
@@ -141,8 +145,9 @@ function PlansList() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {plansQuery.data?.map((plan) => (
-        <Card key={plan.id}>
+      {plansQuery.data?.map((plan, index) => (
+        <Reveal key={plan.id} delayMs={Math.min(index * 60, 240)}>
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-2">
               {plan.name}
@@ -164,6 +169,7 @@ function PlansList() {
             </div>
           </CardContent>
         </Card>
+        </Reveal>
       ))}
     </div>
   );
