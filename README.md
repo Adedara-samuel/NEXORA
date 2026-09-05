@@ -106,8 +106,8 @@ This platform is built incrementally. Status:
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Foundation — monorepo, Docker, Postgres, Redis, Core API, Prisma, basic UI, shared packages, auth foundation | **Verified working end-to-end** |
-| 2 | Control Center — platform auth/users/roles/permissions, organisation management & onboarding | Not started |
-| 3 | Module + Subscription Engine — plans, subscriptions, billing, receipts, expiry/grace period/suspension, renewal | Not started |
+| 2 | Control Center — platform auth/users/roles/permissions, organisation management & onboarding | **Verified working end-to-end** — see [`docs/phase-2-platform-rbac-and-organisations.md`](docs/phase-2-platform-rbac-and-organisations.md) |
+| 3 | Module + Subscription Engine — plans, subscriptions, billing, receipts, expiry/grace period/suspension, renewal | **Verified working end-to-end** (mock payment gateway) — see [`docs/phase-3-module-subscription-engine.md`](docs/phase-3-module-subscription-engine.md) |
 | 4 | Organisation Platform — org auth, Super Admin, user management, custom roles, departments, branches | Not started |
 | 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | Not started |
 | 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | Not started |

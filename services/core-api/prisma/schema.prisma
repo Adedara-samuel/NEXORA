@@ -17,6 +17,23 @@
 //     auth/admin (Phase 4) attach to this later — this phase only owns
 //     identity + lifecycle status.
 //
+// Phase 3 (this change): module + subscription engine.
+//   - Module / PlanModule : a fixed catalog of feature modules (the business
+//     modules Phase 5 actually builds — employees, payroll, etc.) and which
+//     Plans include which modules. The catalog is seeded, not user-created,
+//     since entries must correspond to real built features.
+//   - Plan                : a purchasable tier (price + billing cycle +
+//     included modules).
+//   - Subscription        : one per Organisation, tracks the paid period and
+//     lifecycle (TRIALING/ACTIVE → GRACE_PERIOD → SUSPENDED, or CANCELLED).
+//     Status is stored but re-derived from dates on every read (see
+//     SubscriptionsService.deriveEffectiveStatus) — there's no scheduler yet
+//     to flip it automatically, so reads self-heal it instead.
+//   - Invoice             : one per billing cycle charge attempt; a PAID
+//     invoice doubles as the receipt (see Invoice.receiptNumber).
+//   - Payments run through a swappable PaymentGateway interface — only a
+//     MockPaymentGateway exists until the real integration is built.
+//
 // Every later phase ADDS models here — this file is never treated as final.
 
 generator client {
@@ -43,6 +60,27 @@ enum OrganisationStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUALLY
+}
+
+/// GRACE_PERIOD and SUSPENDED are derived from dates, not set directly by
+/// the API — see SubscriptionsService.deriveEffectiveStatus.
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  GRACE_PERIOD
+  SUSPENDED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
 }
 
 model PlatformUser {
@@ -136,9 +174,97 @@ model Organisation {
   createdBy     PlatformUser?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  subscription  Subscription?
 
   @@index([status])
   @@map("organisations")
+}
+
+/// A fixed catalog of feature modules — entries correspond 1:1 to real
+/// business modules (Phase 5 onward), so this is seeded, not user-created.
+model Module {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  plans PlanModule[]
+
+  @@map("modules")
+}
+
+model Plan {
+  id           String       @id @default(uuid())
+  name         String       @unique
+  description  String?
+  /// Stored in minor currency units (e.g. kobo) to avoid float rounding.
+  priceMinor   Int
+  currency     String       @default("NGN")
+  billingCycle BillingCycle
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  modules       PlanModule[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model PlanModule {
+  planId   String
+  moduleId String
+
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([planId, moduleId])
+  @@map("plan_modules")
+}
+
+/// One per Organisation (1:1 — an org has exactly one subscription at a
+/// time; changing plans updates this row rather than creating a new one).
+model Subscription {
+  id                 String             @id @default(uuid())
+  organisationId     String             @unique
+  planId             String
+  status             SubscriptionStatus @default(TRIALING)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  gracePeriodEndsAt  DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+  invoices     Invoice[]
+
+  @@map("subscriptions")
+}
+
+/// A PAID invoice doubles as the receipt — see receiptNumber/paidAt.
+model Invoice {
+  id               String        @id @default(uuid())
+  subscriptionId   String
+  organisationId   String
+  receiptNumber    String        @unique
+  amountMinor      Int
+  currency         String
+  status           InvoiceStatus @default(PENDING)
+  periodStart      DateTime
+  periodEnd        DateTime
+  paymentReference String?
+  failureReason    String?
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([status])
+  @@map("invoices")
 }
 
 /// Refresh tokens are stored as a hash (never the raw token) so a leaked

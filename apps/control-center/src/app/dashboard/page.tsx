@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, ShieldCheck, Users } from "lucide-react";
+import { Building2, CreditCard, ShieldCheck, Users } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle, Reveal } from "@nexora/ui";
 import { AppShell } from "@/components/app-shell";
 import { useAuthStore } from "@/store/auth-store";
@@ -13,6 +13,13 @@ const SECTIONS = [
     title: "Organisations",
     description: "Onboard organisations and manage their lifecycle status.",
     permission: "organisations:read",
+  },
+  {
+    href: "/billing",
+    icon: CreditCard,
+    title: "Billing",
+    description: "Manage plans, subscriptions, renewals and receipts.",
+    permission: "billing:read",
   },
   {
     href: "/platform-users",

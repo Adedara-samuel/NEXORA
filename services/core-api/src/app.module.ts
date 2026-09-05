@@ -10,6 +10,7 @@ import { AuthModule } from "./auth/auth.module";
 import { RbacModule } from "./rbac/rbac.module";
 import { PlatformUsersModule } from "./platform-users/platform-users.module";
 import { OrganisationsModule } from "./organisations/organisations.module";
+import { BillingModule } from "./billing/billing.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
@@ -30,6 +31,7 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     RbacModule,
     PlatformUsersModule,
     OrganisationsModule,
+    BillingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

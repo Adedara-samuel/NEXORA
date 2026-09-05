@@ -18,6 +18,44 @@ const PERMISSIONS: { key: string; description: string; category: string }[] = [
   { key: "organisations:create", description: "Onboard new organisations", category: "organisations" },
   { key: "organisations:update", description: "Update organisation details", category: "organisations" },
   { key: "organisations:manage_status", description: "Change organisation lifecycle status", category: "organisations" },
+  { key: "billing:read", description: "View plans, subscriptions and invoices", category: "billing" },
+  { key: "billing:manage_plans", description: "Create and edit plans and their included modules", category: "billing" },
+  { key: "billing:manage_subscriptions", description: "Assign plans, renew and cancel organisation subscriptions", category: "billing" },
+];
+
+/** Fixed module catalog — entries correspond to real business modules (Phase 5 onward). */
+const MODULES: { key: string; name: string; description: string }[] = [
+  { key: "employees", name: "Employees", description: "Staff records and profiles" },
+  { key: "attendance", name: "Attendance", description: "Clock-in/out and attendance tracking" },
+  { key: "leave", name: "Leave", description: "Leave requests and approvals" },
+  { key: "documents", name: "Documents", description: "Document storage and compliance records" },
+  { key: "compliance", name: "Compliance", description: "Regulatory compliance tracking" },
+  { key: "payroll", name: "Payroll", description: "Payroll processing and payslips" },
+];
+
+/** Demo plans — real pricing/tiers are a business decision, replace before launch. */
+const PLANS: { name: string; description: string; priceMinor: number; billingCycle: "MONTHLY" | "ANNUALLY"; moduleKeys: string[] }[] = [
+  {
+    name: "Starter",
+    description: "Core HR essentials for small teams",
+    priceMinor: 1_500_000,
+    billingCycle: "MONTHLY",
+    moduleKeys: ["employees", "attendance", "leave"],
+  },
+  {
+    name: "Growth",
+    description: "Adds compliance and document management",
+    priceMinor: 3_500_000,
+    billingCycle: "MONTHLY",
+    moduleKeys: ["employees", "attendance", "leave", "documents", "compliance"],
+  },
+  {
+    name: "Enterprise",
+    description: "Full platform including payroll",
+    priceMinor: 8_000_000,
+    billingCycle: "ANNUALLY",
+    moduleKeys: ["employees", "attendance", "leave", "documents", "compliance", "payroll"],
+  },
 ];
 
 /** System roles — isSystem: true means they can't be deleted via the API. */
@@ -34,8 +72,8 @@ const ROLES: { name: string; description: string; permissions: string[] }[] = [
   },
   {
     name: "FINANCE",
-    description: "Read access to organisations (billing lands in Phase 3)",
-    permissions: ["organisations:read"],
+    description: "Read access to organisations and full billing management",
+    permissions: ["organisations:read", "billing:read", "billing:manage_subscriptions"],
   },
 ];
 
@@ -58,6 +96,28 @@ async function main(): Promise<void> {
     });
   }
   console.log(`Seeded ${PERMISSIONS.length} platform permissions.`);
+
+  for (const module of MODULES) {
+    await prisma.module.upsert({ where: { key: module.key }, update: { name: module.name, description: module.description }, create: module });
+  }
+  console.log(`Seeded ${MODULES.length} modules.`);
+
+  for (const planDef of PLANS) {
+    const plan = await prisma.plan.upsert({
+      where: { name: planDef.name },
+      update: { description: planDef.description, priceMinor: planDef.priceMinor, billingCycle: planDef.billingCycle },
+      create: {
+        name: planDef.name,
+        description: planDef.description,
+        priceMinor: planDef.priceMinor,
+        billingCycle: planDef.billingCycle,
+      },
+    });
+    await prisma.planModule.deleteMany({ where: { planId: plan.id } });
+    const modules = await prisma.module.findMany({ where: { key: { in: planDef.moduleKeys } } });
+    await prisma.planModule.createMany({ data: modules.map((module) => ({ planId: plan.id, moduleId: module.id })) });
+    console.log(`Seeded plan: ${plan.name} (${modules.length} modules)`);
+  }
 
   const roleIdByName = new Map<string, string>();
   for (const roleDef of ROLES) {

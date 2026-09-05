@@ -1,20 +1,29 @@
 import type {
   ApiResult,
   AuthTokens,
+  Invoice,
+  ModuleCatalogEntry,
   Organisation,
   PaginatedResult,
   Permission,
+  Plan,
   PlatformUser,
   Role,
+  Subscription,
 } from "@nexora/types";
 import type {
+  ChangeSubscriptionPlanInput,
   CreateOrganisationInput,
+  CreatePlanInput,
   CreatePlatformUserInput,
   CreateRoleInput,
+  CreateSubscriptionInput,
   ListOrganisationsQuery,
   ListPlatformUsersQuery,
+  RenewSubscriptionInput,
   UpdateOrganisationInput,
   UpdateOrganisationStatusInput,
+  UpdatePlanInput,
   UpdatePlatformUserInput,
   UpdateRoleInput,
 } from "@nexora/validation";
@@ -142,5 +151,40 @@ export class NexoraApiClient {
 
     updateStatus: (id: string, input: UpdateOrganisationStatusInput): Promise<Organisation> =>
       this.request(`/api/v1/organisations/${id}/status`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  billing = {
+    listModules: (): Promise<ModuleCatalogEntry[]> => this.request("/api/v1/billing/modules"),
+
+    listPlans: (): Promise<Plan[]> => this.request("/api/v1/billing/plans"),
+
+    createPlan: (input: CreatePlanInput): Promise<Plan> =>
+      this.request("/api/v1/billing/plans", { method: "POST", body: JSON.stringify(input) }),
+
+    updatePlan: (id: string, input: UpdatePlanInput): Promise<Plan> =>
+      this.request(`/api/v1/billing/plans/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+
+    getSubscription: (organisationId: string): Promise<Subscription> =>
+      this.request(`/api/v1/organisations/${organisationId}/subscription`),
+
+    createSubscription: (organisationId: string, input: CreateSubscriptionInput): Promise<Subscription> =>
+      this.request(`/api/v1/organisations/${organisationId}/subscription`, { method: "POST", body: JSON.stringify(input) }),
+
+    changePlan: (organisationId: string, input: ChangeSubscriptionPlanInput): Promise<Subscription> =>
+      this.request(`/api/v1/organisations/${organisationId}/subscription`, { method: "PATCH", body: JSON.stringify(input) }),
+
+    renewSubscription: (
+      organisationId: string,
+      input: RenewSubscriptionInput = { simulateFailure: false },
+    ): Promise<{ subscription: Subscription; invoice: Invoice }> =>
+      this.request(`/api/v1/organisations/${organisationId}/subscription/renew`, { method: "POST", body: JSON.stringify(input) }),
+
+    cancelSubscription: (organisationId: string): Promise<Subscription> =>
+      this.request(`/api/v1/organisations/${organisationId}/subscription/cancel`, { method: "POST" }),
+
+    listInvoices: (organisationId: string): Promise<Invoice[]> =>
+      this.request(`/api/v1/organisations/${organisationId}/invoices`),
+
+    findInvoiceById: (id: string): Promise<Invoice> => this.request(`/api/v1/invoices/${id}`),
   };
 }
