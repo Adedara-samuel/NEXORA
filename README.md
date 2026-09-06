@@ -109,7 +109,7 @@ This platform is built incrementally. Status:
 | 2 | Control Center — platform auth/users/roles/permissions, organisation management & onboarding | **Verified working end-to-end** — see [`docs/phase-2-platform-rbac-and-organisations.md`](docs/phase-2-platform-rbac-and-organisations.md) |
 | 3 | Module + Subscription Engine — plans, subscriptions, billing, receipts, expiry/grace period/suspension, renewal | **Verified working end-to-end** (mock payment gateway) — see [`docs/phase-3-module-subscription-engine.md`](docs/phase-3-module-subscription-engine.md) |
 | 4 | Organisation Platform — org auth, Super Admin, user management, custom roles, departments, branches | **Verified working end-to-end** — see [`docs/phase-4-organisation-platform.md`](docs/phase-4-organisation-platform.md) |
-| 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | **In progress** — Employees, Attendance, Leave and Payroll done, verified end-to-end; documents/compliance not started — see [`docs/phase-5-employees.md`](docs/phase-5-employees.md), [`docs/phase-5-attendance-leave.md`](docs/phase-5-attendance-leave.md), [`docs/phase-5-payroll.md`](docs/phase-5-payroll.md) |
+| 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | **Verified working end-to-end (backend)** — see [`docs/phase-5-employees.md`](docs/phase-5-employees.md), [`docs/phase-5-attendance-leave.md`](docs/phase-5-attendance-leave.md), [`docs/phase-5-payroll.md`](docs/phase-5-payroll.md), [`docs/phase-5-documents-compliance.md`](docs/phase-5-documents-compliance.md) |
 | 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | Superseded by integrating the standalone `sapok-pay` project (see `../sapok-pay`) rather than building this inside Core API — not yet integrated |
 | 7 | NEXORA AI Foundation — Python service, AI gateway, model abstraction, conversations, permissions | Superseded by integrating the standalone `sapok-ai` project (see `../sapok-ai`) — not yet integrated |
 | 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | Superseded by `sapok-ai` — not yet integrated |
@@ -127,9 +127,10 @@ lands — it is not pre-written ahead of the system it describes.
 
 Control Center's UI (auth, dashboard, organisations, platform users, roles,
 billing) is built and mobile-responsive with the custom scrollbar/animation
-polish applied. Organisation Desktop now has a first frontend pass too —
-org login, employees, attendance, leave and payroll — added as a dedicated
-catch-up (see [`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md)
+polish applied. Organisation Desktop now has a full Phase 5 frontend —
+org login, employees, attendance, leave, payroll, documents and
+compliance — the first four as a dedicated catch-up pass, documents and
+compliance built alongside their backend per the process change below (see [`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md)
 for exactly what was built and, importantly, **what was and wasn't
 verified**: it type-checks and production-builds cleanly, but has not been
 visually tested in a real browser in this environment, so treat it as

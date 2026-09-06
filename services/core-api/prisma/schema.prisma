@@ -231,6 +231,8 @@ model Organisation {
   taxSettings   OrganisationTaxSettings?
   payrollRuns   PayrollRun[]
   payslips      Payslip[]
+  documents     Document[]
+  complianceRecords ComplianceRecord[]
 
   @@index([status])
   @@map("organisations")
@@ -348,6 +350,7 @@ model OrganisationUser {
   refreshTokens RefreshToken[]
   employee      Employee?
   approvedLeaveRequests LeaveRequest[]
+  uploadedDocuments Document[]
 
   @@unique([organisationId, email])
   @@index([organisationId])
@@ -480,6 +483,8 @@ model Employee {
   attendanceRecords Attendance[]
   leaveRequests     LeaveRequest[]
   payslips          Payslip[]
+  documents         Document[]
+  complianceRecords ComplianceRecord[]
 
   @@unique([organisationId, employeeNumber])
   @@index([organisationId])
@@ -649,6 +654,74 @@ model Payslip {
   @@unique([payrollRunId, employeeId])
   @@index([organisationId])
   @@map("payslips")
+}
+
+enum DocumentCategory {
+  IDENTIFICATION
+  CONTRACT
+  CERTIFICATE
+  POLICY
+  OTHER
+}
+
+/// Metadata-only — NEXORA doesn't run its own file storage yet, so `fileUrl`
+/// is an external link the organisation manages itself (their own Drive/S3/
+/// etc.), not an uploaded file. `employeeId` is optional: a document can
+/// belong to a specific employee (an ID, a signed contract) or to the
+/// organisation as a whole (a company policy).
+model Document {
+  id             String           @id @default(uuid())
+  organisationId String
+  employeeId     String?
+  title          String
+  category       DocumentCategory @default(OTHER)
+  fileUrl        String
+  expiryDate     DateTime?
+  uploadedById   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organisation      Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee          Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  uploadedBy        OrganisationUser?  @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  complianceRecords ComplianceRecord[]
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@map("documents")
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  PENDING
+  EXPIRED
+  NON_COMPLIANT
+}
+
+/// A trackable regulatory/policy obligation — a certification renewal, a
+/// license, a mandatory training — optionally scoped to one employee or
+/// left organisation-wide (`employeeId: null`). `documentId` optionally
+/// links the evidence (e.g. the uploaded certificate) once satisfied.
+model ComplianceRecord {
+  id             String           @id @default(uuid())
+  organisationId String
+  employeeId     String?
+  title          String
+  description    String?
+  status         ComplianceStatus @default(PENDING)
+  dueDate        DateTime?
+  completedDate  DateTime?
+  documentId     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  document     Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@map("compliance_records")
 }
 
 /// Refresh tokens are stored as a hash (never the raw token) so a leaked

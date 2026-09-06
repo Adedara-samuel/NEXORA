@@ -3,6 +3,7 @@ import type {
   Attendance,
   AuthTokens,
   Branch,
+  ComplianceRecord,
   DashboardSummary,
   Department,
   Employee,
@@ -10,6 +11,7 @@ import type {
   LeaveRequest,
   ModuleCatalogEntry,
   Organisation,
+  OrganisationDocument,
   OrganisationTaxSettings,
   PaginatedResult,
   PayrollRun,
@@ -24,6 +26,8 @@ import type {
 import type {
   ChangeSubscriptionPlanInput,
   CreateAttendanceInput,
+  CreateComplianceRecordInput,
+  CreateDocumentInput,
   CreateEmployeeInput,
   CreateLeaveRequestInput,
   CreateOrganisationInput,
@@ -33,6 +37,8 @@ import type {
   CreateSubscriptionInput,
   DecideLeaveRequestInput,
   ListAttendanceQuery,
+  ListComplianceRecordsQuery,
+  ListDocumentsQuery,
   ListEmployeesQuery,
   ListLeaveRequestsQuery,
   ListOrganisationsQuery,
@@ -40,6 +46,8 @@ import type {
   RenewSubscriptionInput,
   RunPayrollInput,
   UpdateAttendanceInput,
+  UpdateComplianceRecordInput,
+  UpdateDocumentInput,
   UpdateEmployeeInput,
   UpdateOrganisationInput,
   UpdateOrganisationStatusInput,
@@ -281,5 +289,31 @@ export class NexoraApiClient {
       this.request("/api/v1/organisation/payroll/runs", { method: "POST", body: JSON.stringify(input) }),
 
     cancel: (id: string): Promise<PayrollRun> => this.request(`/api/v1/organisation/payroll/runs/${id}/cancel`, { method: "PATCH" }),
+  };
+
+  documents = {
+    list: (query: Partial<ListDocumentsQuery> = {}): Promise<PaginatedResult<OrganisationDocument>> =>
+      this.request(`/api/v1/organisation/documents${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<OrganisationDocument> => this.request(`/api/v1/organisation/documents/${id}`),
+
+    create: (input: CreateDocumentInput): Promise<OrganisationDocument> =>
+      this.request("/api/v1/organisation/documents", { method: "POST", body: JSON.stringify(input) }),
+
+    update: (id: string, input: UpdateDocumentInput): Promise<OrganisationDocument> =>
+      this.request(`/api/v1/organisation/documents/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  compliance = {
+    list: (query: Partial<ListComplianceRecordsQuery> = {}): Promise<PaginatedResult<ComplianceRecord>> =>
+      this.request(`/api/v1/organisation/compliance${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<ComplianceRecord> => this.request(`/api/v1/organisation/compliance/${id}`),
+
+    create: (input: CreateComplianceRecordInput): Promise<ComplianceRecord> =>
+      this.request("/api/v1/organisation/compliance", { method: "POST", body: JSON.stringify(input) }),
+
+    update: (id: string, input: UpdateComplianceRecordInput): Promise<ComplianceRecord> =>
+      this.request(`/api/v1/organisation/compliance/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   };
 }

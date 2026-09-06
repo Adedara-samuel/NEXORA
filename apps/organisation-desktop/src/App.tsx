@@ -5,6 +5,8 @@ import EmployeesPage from "./pages/employees-page";
 import AttendancePage from "./pages/attendance-page";
 import LeavePage from "./pages/leave-page";
 import PayrollPage from "./pages/payroll-page";
+import DocumentsPage from "./pages/documents-page";
+import CompliancePage from "./pages/compliance-page";
 
 export function App() {
   return (
@@ -17,6 +19,8 @@ export function App() {
             <Route path="/attendance" element={<AttendancePage />} />
             <Route path="/leave" element={<LeavePage />} />
             <Route path="/payroll" element={<PayrollPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/compliance" element={<CompliancePage />} />
             <Route path="*" element={<Navigate to="/employees" replace />} />
           </Routes>
         </BrowserRouter>

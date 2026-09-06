@@ -51,6 +51,19 @@ main README):
   resolved effective bands table, lets an admin override the pension rate
   or fully customise the band table row-by-row), run-payroll form, and a
   runs list where each row expands to its payslips and can be cancelled.
+- **Documents** (`pages/documents-page.tsx`): add-document form (title,
+  category, optional employee, external file URL, optional expiry date)
+  and a list with an "Open" link and an EXPIRED badge once the expiry date
+  has passed.
+- **Compliance** (`pages/compliance-page.tsx`): add-record form and a list
+  with an inline expand-to-edit panel per row (status, with a completed-date
+  field that appears when setting status to COMPLIANT, matching the
+  backend's same-request validation rule).
+
+These two were built in the same pass as their Phase 5 backend slice
+([`docs/phase-5-documents-compliance.md`](phase-5-documents-compliance.md)),
+per the process change below — not part of the original Phase 4/5 catch-up
+backlog, which only covered employees/attendance/leave/payroll.
 
 ## `@nexora/api-client` additions
 

@@ -19,6 +19,8 @@ import { EmployeesModule } from "./employees/employees.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { LeaveModule } from "./leave/leave.module";
 import { PayrollModule } from "./payroll/payroll.module";
+import { DocumentsModule } from "./documents/documents.module";
+import { ComplianceModule } from "./compliance/compliance.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
@@ -48,6 +50,8 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     AttendanceModule,
     LeaveModule,
     PayrollModule,
+    DocumentsModule,
+    ComplianceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
