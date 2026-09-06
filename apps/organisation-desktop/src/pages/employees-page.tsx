@@ -54,6 +54,7 @@ function CreateEmployeeForm() {
   const [branchId, setBranchId] = useState("");
   const [hireDate, setHireDate] = useState("");
   const [salaryMajor, setSalaryMajor] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -72,6 +73,7 @@ function CreateEmployeeForm() {
         hireDate: hireDate as unknown as Date,
         salaryMinor: salaryMajor ? Math.round(Number(salaryMajor) * 100) : undefined,
         currency: "NGN",
+        bankAccountNumber: bankAccountNumber.trim() || undefined,
       }),
     onSuccess: (employee) => {
       toast({ variant: "success", title: "Employee added", description: `${employee.firstName} ${employee.lastName} was added.` });
@@ -85,6 +87,7 @@ function CreateEmployeeForm() {
       setBranchId("");
       setHireDate("");
       setSalaryMajor("");
+      setBankAccountNumber("");
     },
     onError: (error) => {
       const message = error instanceof NexoraApiError ? error.message : "Could not add employee.";
@@ -152,6 +155,15 @@ function CreateEmployeeForm() {
             <Label htmlFor="emp-salary">Monthly salary, NGN (optional)</Label>
             <Input id="emp-salary" type="number" min={0} value={salaryMajor} onChange={(event) => setSalaryMajor(event.target.value)} placeholder="500000" />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="emp-bank-account">Bank account number (optional)</Label>
+            <Input
+              id="emp-bank-account"
+              value={bankAccountNumber}
+              onChange={(event) => setBankAccountNumber(event.target.value)}
+              placeholder="Needed for payroll disbursement"
+            />
+          </div>
         </div>
         <Button onClick={() => createMutation.mutate()} disabled={!canSubmit || createMutation.isPending} className="self-start">
           <Plus className="h-4 w-4" />
@@ -190,6 +202,7 @@ function EmployeeRow({ employee, canUpdate }: { employee: Employee; canUpdate: b
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
   const [terminationDate, setTerminationDate] = useState("");
   const [salaryMajor, setSalaryMajor] = useState(employee.salaryMinor !== null ? String(employee.salaryMinor / 100) : "");
+  const [bankAccountNumber, setBankAccountNumber] = useState(employee.bankAccountNumber ?? "");
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -197,6 +210,7 @@ function EmployeeRow({ employee, canUpdate }: { employee: Employee; canUpdate: b
         status,
         terminationDate: status === "TERMINATED" ? (terminationDate as unknown as Date) : undefined,
         salaryMinor: salaryMajor ? Math.round(Number(salaryMajor) * 100) : undefined,
+        bankAccountNumber: bankAccountNumber.trim() || null,
       }),
     onSuccess: () => {
       toast({ variant: "success", title: "Employee updated" });
@@ -224,6 +238,7 @@ function EmployeeRow({ employee, canUpdate }: { employee: Employee; canUpdate: b
             {employee.employeeNumber}
             {employee.position ? ` · ${employee.position}` : ""}
             {employee.salaryMinor !== null ? ` · ₦${(employee.salaryMinor / 100).toLocaleString()}/mo` : ""}
+            {employee.bankAccountNumber ? ` · bank on file` : " · no bank account on file"}
           </CardDescription>
         </div>
         {canUpdate && <div className="shrink-0 text-muted-foreground">{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>}
@@ -253,6 +268,15 @@ function EmployeeRow({ employee, canUpdate }: { employee: Employee; canUpdate: b
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`salary-${employee.id}`}>Monthly salary, NGN</Label>
               <Input id={`salary-${employee.id}`} type="number" min={0} value={salaryMajor} onChange={(event) => setSalaryMajor(event.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`bank-account-${employee.id}`}>Bank account number</Label>
+              <Input
+                id={`bank-account-${employee.id}`}
+                value={bankAccountNumber}
+                onChange={(event) => setBankAccountNumber(event.target.value)}
+                placeholder="Needed for payroll disbursement"
+              />
             </div>
           </div>
           <Button

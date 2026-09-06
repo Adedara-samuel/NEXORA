@@ -16,6 +16,8 @@ export interface OrganisationTaxSettings {
 }
 
 export type PayrollRunStatus = "COMPLETED" | "CANCELLED";
+export type PayrollDisbursementStatus = "NOT_DISBURSED" | "DISBURSING" | "DISBURSED" | "PARTIALLY_DISBURSED" | "FAILED";
+export type PayslipDisbursementStatus = "PAID" | "FAILED" | "SKIPPED";
 
 export interface PayrollRun {
   id: string;
@@ -28,6 +30,9 @@ export interface PayrollRun {
   totalDeductionsMinor: number;
   totalNetMinor: number;
   skippedEmployeeCount: number;
+  disbursementStatus: PayrollDisbursementStatus;
+  disbursementBatchReference: string | null;
+  disbursementAttempts: number;
   createdById: string | null;
   createdAt: string;
 }
@@ -52,9 +57,49 @@ export interface Payslip {
   netMinor: number;
   currency: string;
   breakdown: PayslipBreakdown;
+  disbursementStatus: PayslipDisbursementStatus | null;
+  disbursementFailureReason: string | null;
   createdAt: string;
 }
 
 export interface PayrollRunWithPayslips extends PayrollRun {
   payslips: Payslip[];
+}
+
+export interface PayrollWallet {
+  balanceMinor: number;
+  currency: string;
+}
+
+export interface PayrollBankAccount {
+  id: string;
+  accountNumber: string;
+  accountName: string;
+  bankCode: string;
+  createdAt: string;
+}
+
+export interface PayrollWalletDeposit {
+  id: string;
+  status: string;
+  amountMinor: number;
+}
+
+export interface PayrollReconciliationEntry {
+  employeeId: string;
+  employeeName: string;
+  nexoraStatus: PayslipDisbursementStatus | null;
+  nexoraNetMinor: number;
+  sapokPayStatus: "PAID" | "FAILED" | null;
+  sapokPayAmountMinor: number | null;
+  sapokPayFailureReason: string | null;
+  matches: boolean;
+}
+
+export interface PayrollReconciliationReport {
+  payrollRunId: string;
+  batchReference: string;
+  checkedAt: string;
+  mismatchCount: number;
+  entries: PayrollReconciliationEntry[];
 }

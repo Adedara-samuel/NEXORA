@@ -17,6 +17,8 @@ export interface Employee {
   terminationDate: string | null;
   salaryMinor: number | null;
   currency: string;
+  bankAccountNumber: string | null;
+  bankCode: string | null;
   createdAt: string;
   updatedAt: string;
 }

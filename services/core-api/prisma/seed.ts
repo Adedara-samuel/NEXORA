@@ -50,6 +50,8 @@ const ORGANISATION_PERMISSIONS: { key: string; description: string; category: st
   { key: "payroll:read", description: "View payroll runs and payslips", category: "payroll" },
   { key: "payroll:create", description: "Run payroll for a period", category: "payroll" },
   { key: "payroll:manage_settings", description: "Configure tax bands and pension rate overrides", category: "payroll" },
+  { key: "payroll:disburse", description: "Disburse a completed payroll run's net pay via SAPOK Pay", category: "payroll" },
+  { key: "payroll:manage_wallet", description: "View and fund the organisation's SAPOK Pay wallet (bank accounts, deposits)", category: "payroll" },
   { key: "documents:read", description: "View documents", category: "documents" },
   { key: "documents:create", description: "Add documents", category: "documents" },
   { key: "documents:update", description: "Update documents", category: "documents" },

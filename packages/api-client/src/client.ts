@@ -13,9 +13,14 @@ import type {
   Organisation,
   OrganisationDocument,
   OrganisationTaxSettings,
+  OrganisationUser,
   PaginatedResult,
+  PayrollBankAccount,
+  PayrollReconciliationReport,
   PayrollRun,
   PayrollRunWithPayslips,
+  PayrollWallet,
+  PayrollWalletDeposit,
   Permission,
   Plan,
   PlatformUser,
@@ -26,22 +31,29 @@ import type {
 import type {
   ChangeSubscriptionPlanInput,
   CreateAttendanceInput,
+  CreateBranchInput,
   CreateComplianceRecordInput,
+  CreateDepartmentInput,
   CreateDocumentInput,
   CreateEmployeeInput,
   CreateLeaveRequestInput,
   CreateOrganisationInput,
+  CreateOrganisationRoleInput,
+  CreateOrganisationUserInput,
   CreatePlanInput,
   CreatePlatformUserInput,
   CreateRoleInput,
   CreateSubscriptionInput,
   DecideLeaveRequestInput,
+  DepositToPayrollWalletInput,
+  LinkPayrollBankAccountInput,
   ListAttendanceQuery,
   ListComplianceRecordsQuery,
   ListDocumentsQuery,
   ListEmployeesQuery,
   ListLeaveRequestsQuery,
   ListOrganisationsQuery,
+  ListOrganisationUsersQuery,
   ListPlatformUsersQuery,
   RenewSubscriptionInput,
   RunPayrollInput,
@@ -50,7 +62,9 @@ import type {
   UpdateDocumentInput,
   UpdateEmployeeInput,
   UpdateOrganisationInput,
+  UpdateOrganisationRoleInput,
   UpdateOrganisationStatusInput,
+  UpdateOrganisationUserInput,
   UpdatePlanInput,
   UpdatePlatformUserInput,
   UpdateRoleInput,
@@ -232,7 +246,42 @@ export class NexoraApiClient {
   organisationStructure = {
     listDepartments: (): Promise<Department[]> => this.request("/api/v1/organisation/departments"),
 
+    createDepartment: (input: CreateDepartmentInput): Promise<Department> =>
+      this.request("/api/v1/organisation/departments", { method: "POST", body: JSON.stringify(input) }),
+
     listBranches: (): Promise<Branch[]> => this.request("/api/v1/organisation/branches"),
+
+    createBranch: (input: CreateBranchInput): Promise<Branch> =>
+      this.request("/api/v1/organisation/branches", { method: "POST", body: JSON.stringify(input) }),
+  };
+
+  organisationUsers = {
+    getMe: (): Promise<OrganisationUser> => this.request("/api/v1/organisation/users/me"),
+
+    list: (query: Partial<ListOrganisationUsersQuery> = {}): Promise<PaginatedResult<OrganisationUser>> =>
+      this.request(`/api/v1/organisation/users${this.toQueryString(query)}`),
+
+    findById: (id: string): Promise<OrganisationUser> => this.request(`/api/v1/organisation/users/${id}`),
+
+    create: (input: CreateOrganisationUserInput): Promise<OrganisationUser> =>
+      this.request("/api/v1/organisation/users", { method: "POST", body: JSON.stringify(input) }),
+
+    update: (id: string, input: UpdateOrganisationUserInput): Promise<OrganisationUser> =>
+      this.request(`/api/v1/organisation/users/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  };
+
+  organisationRbac = {
+    listRoles: (): Promise<Role[]> => this.request("/api/v1/organisation/roles"),
+
+    listPermissions: (): Promise<Permission[]> => this.request("/api/v1/organisation/permissions"),
+
+    createRole: (input: CreateOrganisationRoleInput): Promise<Role> =>
+      this.request("/api/v1/organisation/roles", { method: "POST", body: JSON.stringify(input) }),
+
+    updateRole: (id: string, input: UpdateOrganisationRoleInput): Promise<Role> =>
+      this.request(`/api/v1/organisation/roles/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+
+    deleteRole: (id: string): Promise<{ deleted: true }> => this.request(`/api/v1/organisation/roles/${id}`, { method: "DELETE" }),
   };
 
   employees = {
@@ -289,6 +338,24 @@ export class NexoraApiClient {
       this.request("/api/v1/organisation/payroll/runs", { method: "POST", body: JSON.stringify(input) }),
 
     cancel: (id: string): Promise<PayrollRun> => this.request(`/api/v1/organisation/payroll/runs/${id}/cancel`, { method: "PATCH" }),
+
+    disburse: (id: string): Promise<PayrollRun> => this.request(`/api/v1/organisation/payroll/runs/${id}/disburse`, { method: "POST" }),
+
+    getWallet: (): Promise<PayrollWallet> => this.request("/api/v1/organisation/payroll/wallet"),
+
+    listBankAccounts: (): Promise<PayrollBankAccount[]> => this.request("/api/v1/organisation/payroll/wallet/bank-accounts"),
+
+    linkBankAccount: (input: LinkPayrollBankAccountInput): Promise<PayrollBankAccount> =>
+      this.request("/api/v1/organisation/payroll/wallet/bank-accounts", { method: "POST", body: JSON.stringify(input) }),
+
+    depositToWallet: (input: DepositToPayrollWalletInput, idempotencyKey: string): Promise<PayrollWalletDeposit> =>
+      this.request("/api/v1/organisation/payroll/wallet/deposits", {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify(input),
+      }),
+
+    reconcile: (id: string): Promise<PayrollReconciliationReport> => this.request(`/api/v1/organisation/payroll/runs/${id}/reconcile`),
   };
 
   documents = {

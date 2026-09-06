@@ -7,6 +7,9 @@ import LeavePage from "./pages/leave-page";
 import PayrollPage from "./pages/payroll-page";
 import DocumentsPage from "./pages/documents-page";
 import CompliancePage from "./pages/compliance-page";
+import OrganisationStructurePage from "./pages/organisation-structure-page";
+import OrganisationUsersPage from "./pages/organisation-users-page";
+import OrganisationRolesPage from "./pages/organisation-roles-page";
 
 export function App() {
   return (
@@ -21,6 +24,9 @@ export function App() {
             <Route path="/payroll" element={<PayrollPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
+            <Route path="/structure" element={<OrganisationStructurePage />} />
+            <Route path="/users" element={<OrganisationUsersPage />} />
+            <Route path="/roles" element={<OrganisationRolesPage />} />
             <Route path="*" element={<Navigate to="/employees" replace />} />
           </Routes>
         </BrowserRouter>

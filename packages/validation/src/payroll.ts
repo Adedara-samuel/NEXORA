@@ -32,3 +32,14 @@ export const updateTaxSettingsSchema = z
     message: "At least one of customBands or pensionRatePercent must be provided",
   });
 export type UpdateTaxSettingsInput = z.infer<typeof updateTaxSettingsSchema>;
+
+export const linkPayrollBankAccountSchema = z.object({
+  accountNumber: z.string().trim().regex(/^\d{10}$/, "accountNumber must be exactly 10 digits"),
+});
+export type LinkPayrollBankAccountInput = z.infer<typeof linkPayrollBankAccountSchema>;
+
+export const depositToPayrollWalletSchema = z.object({
+  bankAccountId: z.string().uuid(),
+  amountMinor: z.coerce.number().int().positive(),
+});
+export type DepositToPayrollWalletInput = z.infer<typeof depositToPayrollWalletSchema>;

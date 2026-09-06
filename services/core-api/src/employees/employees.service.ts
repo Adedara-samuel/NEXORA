@@ -73,6 +73,8 @@ export class EmployeesService {
         hireDate: input.hireDate,
         salaryMinor: input.salaryMinor,
         currency: input.currency,
+        bankAccountNumber: input.bankAccountNumber,
+        bankCode: input.bankCode,
       },
     });
 
@@ -113,6 +115,8 @@ export class EmployeesService {
         status: input.status,
         terminationDate: input.terminationDate,
         salaryMinor: input.salaryMinor,
+        bankAccountNumber: input.bankAccountNumber,
+        bankCode: input.bankCode,
       },
     });
 
@@ -176,6 +180,8 @@ export class EmployeesService {
       terminationDate: employee.terminationDate?.toISOString() ?? null,
       salaryMinor: employee.salaryMinor,
       currency: employee.currency,
+      bankAccountNumber: employee.bankAccountNumber,
+      bankCode: employee.bankCode,
       createdAt: employee.createdAt.toISOString(),
       updatedAt: employee.updatedAt.toISOString(),
     };

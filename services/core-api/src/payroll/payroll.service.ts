@@ -206,6 +206,9 @@ export class PayrollService {
       totalDeductionsMinor: run.totalDeductionsMinor,
       totalNetMinor: run.totalNetMinor,
       skippedEmployeeCount: run.skippedEmployeeCount,
+      disbursementStatus: run.disbursementStatus,
+      disbursementBatchReference: run.disbursementBatchReference,
+      disbursementAttempts: run.disbursementAttempts,
       createdById: run.createdById,
       createdAt: run.createdAt.toISOString(),
     };
@@ -224,6 +227,8 @@ export class PayrollService {
       netMinor: payslip.netMinor,
       currency: payslip.currency,
       breakdown: payslip.breakdown as unknown as PayslipBreakdown,
+      disbursementStatus: payslip.disbursementStatus,
+      disbursementFailureReason: payslip.disbursementFailureReason,
       createdAt: payslip.createdAt.toISOString(),
     };
   }

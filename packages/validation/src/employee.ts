@@ -13,6 +13,8 @@ export const createEmployeeSchema = z.object({
   hireDate: z.coerce.date(),
   salaryMinor: z.coerce.number().int().nonnegative().optional(),
   currency: z.string().trim().toUpperCase().length(3).default("NGN"),
+  bankAccountNumber: z.string().trim().min(1).optional(),
+  bankCode: z.string().trim().min(1).optional(),
 });
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 
@@ -27,6 +29,8 @@ export const updateEmployeeSchema = z.object({
   status: z.enum(["ACTIVE", "ON_LEAVE", "TERMINATED"]).optional(),
   terminationDate: z.coerce.date().nullable().optional(),
   salaryMinor: z.coerce.number().int().nonnegative().nullable().optional(),
+  bankAccountNumber: z.string().trim().min(1).nullable().optional(),
+  bankCode: z.string().trim().min(1).nullable().optional(),
 });
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 

@@ -213,6 +213,13 @@ model Organisation {
   /// Only "NG" has seeded bands so far; any other country needs
   /// OrganisationTaxSettings.customBands set before payroll can run.
   countryCode  String             @default("NG")
+  /// Set once this organisation has been provisioned as a Merchant in
+  /// SAPOK Pay (see docs/phase-6-payroll-disbursement.md) — null until the
+  /// first disbursement attempt. paymentProviderApiKey is stored in plain
+  /// text: a known gap, needs an encryption-at-rest layer before this
+  /// holds anything that matters in production.
+  paymentProviderMerchantId String?
+  paymentProviderApiKey     String?
   createdById  String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -473,6 +480,12 @@ model Employee {
   /// created with salary info up front.
   salaryMinor        Int?
   currency           String         @default("NGN")
+  /// Where payroll disbursement (Phase 6, SAPOK Pay integration) pays this
+  /// employee's net salary — both null until set; an employee without
+  /// these is skipped by disbursement the same way one without
+  /// salaryMinor is skipped by payroll computation.
+  bankAccountNumber  String?
+  bankCode           String?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -606,6 +619,20 @@ enum PayrollRunStatus {
   CANCELLED
 }
 
+enum PayrollDisbursementStatus {
+  NOT_DISBURSED
+  DISBURSING
+  DISBURSED
+  PARTIALLY_DISBURSED
+  FAILED
+}
+
+enum PayslipDisbursementStatus {
+  PAID
+  FAILED
+  SKIPPED
+}
+
 /// One run per organisation per calendar month. Once COMPLETED a run's
 /// payslips are immutable — correcting a mistake means CANCELLED + a fresh
 /// run, never editing figures in place (same immutability principle as
@@ -621,6 +648,20 @@ model PayrollRun {
   totalDeductionsMinor Int              @default(0)
   totalNetMinor        Int              @default(0)
   skippedEmployeeCount Int              @default(0)
+  /// Phase 6 (SAPOK Pay integration) — separate from `status`, which is
+  /// about whether the RUN'S NUMBERS are valid (COMPLETED/CANCELLED).
+  /// This tracks whether the money has actually moved yet.
+  disbursementStatus        PayrollDisbursementStatus @default(NOT_DISBURSED)
+  /// SAPOK Pay's PayrollBatch.id, once a disbursement attempt has been made.
+  disbursementBatchReference String?
+  /// Incremented on every attempt (not just successful ones) — the
+  /// idempotency key sent to SAPOK Pay includes this number specifically
+  /// so a retry after fixing the underlying problem (e.g. funding the
+  /// wallet) sends a NEW key and can actually succeed, instead of SAPOK
+  /// Pay's own idempotency check replaying the first attempt's cached
+  /// failure forever. A real bug caught in end-to-end testing, not a
+  /// hypothetical — see docs/phase-6-payroll-disbursement.md.
+  disbursementAttempts       Int      @default(0)
   createdById          String?
   createdAt            DateTime         @default(now())
 
@@ -645,6 +686,9 @@ model Payslip {
   currency             String
   /// Computation trail for auditability: { annualGrossMajor, annualTaxableMajor, bandsApplied: [...] }
   breakdown            Json
+  /// Null until a disbursement attempt has been made for this payslip.
+  disbursementStatus         PayslipDisbursementStatus?
+  disbursementFailureReason  String?
   createdAt            DateTime @default(now())
 
   payrollRun   PayrollRun   @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)

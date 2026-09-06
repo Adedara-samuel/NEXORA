@@ -17,11 +17,11 @@ someone needs to actually click through it before it's trusted for real use.
 Phase 4 (organisation platform) and Phase 5 (employees, attendance, leave,
 payroll) were all built backend-only, one after another, with no UI —
 flagged explicitly in the main [`README.md`](../README.md)'s "Frontend
-status" section after the project owner asked. This is the one-time
-catch-up pass closing that gap for Phase 5's four modules. Departments,
-branches, organisation users and organisation roles (Phase 4) still have
-**no frontend** — deliberately out of scope for this pass; see "What's
-still not built" below.
+status" section after the project owner asked. This started as a one-time
+catch-up pass for Phase 5's four modules; Phase 4's own catch-up
+(departments, branches, organisation users, organisation roles) followed
+once Phase 6 (payroll disbursement) made it clear every backend surface
+needed a matching frontend, not just the newest one.
 
 ## What was built
 
@@ -65,13 +65,46 @@ These two were built in the same pass as their Phase 5 backend slice
 per the process change below — not part of the original Phase 4/5 catch-up
 backlog, which only covered employees/attendance/leave/payroll.
 
+- **Payroll disbursement** (`pages/payroll-page.tsx`, extended): each run
+  now shows a disbursement-status badge, a "Disburse"/"Retry disbursement"
+  button (only shown when `payroll:disburse` is held and the run isn't
+  already `DISBURSED`/`PARTIALLY_DISBURSED`), and a per-payslip
+  disbursement column with the failure reason inline. The Employees form
+  (create + inline edit) now also captures `bankAccountNumber` — without
+  it, disbursement has nothing to pay the employee's payslip to and the
+  backend marks that payslip `SKIPPED`, which is exactly what happens if
+  this field is left blank. Also added: a Wallet card (balance, bank-account
+  linking, deposit form), a "Reconcile" button per disbursed run showing a
+  match/mismatch table against SAPOK Pay's own records, and a per-payslip
+  expandable tax-computation breakdown — see
+  [`docs/phase-6-payroll-disbursement.md`](phase-6-payroll-disbursement.md)
+  for the full Phase 6 writeup (now complete).
+- **Organisation Structure** (`pages/organisation-structure-page.tsx`) —
+  Phase 4's catch-up: two-column Departments/Branches page, create-only
+  (the backend has no update/delete for either yet, so neither does this).
+- **Organisation Users** (`pages/organisation-users-page.tsx`) — create
+  form (email/password/name, role checkboxes sourced from
+  `organisationRbac.listRoles()`, optional department/branch) and a list
+  with inline status + role editing. Deliberately distinct from Employees:
+  this is login-capable staff accounts, not HR records.
+- **Roles** (`pages/organisation-roles-page.tsx`) — create form and list,
+  permissions grouped by category with checkboxes (sourced from
+  `organisationRbac.listPermissions()`), inline permission editing, and
+  delete (blocked server-side for system roles, disabled client-side to
+  match). Role names are coerced to `UPPER_SNAKE_CASE` client-side before
+  submitting, matching the backend's validation regex.
+
 ## `@nexora/api-client` additions
 
 Extended the shared client (`packages/api-client/src/client.ts`, used by
 both Control Center and Organisation Desktop) with `auth.organisationLogin`,
-`employees`, `attendance`, `leave`, `payroll`, and a read-only
-`organisationStructure` (departments/branches list, for the Employees
-form's dropdowns). Nothing existing was changed or renamed.
+`employees`, `attendance`, `leave`, `payroll` (including `disburse`),
+`documents`, `compliance`, a full `organisationStructure` (create, not just
+list), `organisationUsers`, and `organisationRbac`. Nothing existing was
+changed or renamed. All new methods were curl-verified directly against
+the running backend (not just typechecked) — create/list/update/delete for
+roles, create/list/update for users, create for departments/branches —
+confirming the request/response shapes actually match, not just compile.
 
 ## The Vite/CJS bug this pass found and fixed
 
@@ -96,15 +129,21 @@ one app.
 
 ## What's still not built
 
-- Departments, branches, organisation users, organisation roles (Phase 4) —
-  no UI at all yet.
 - Payslip PDF/export, employee self-service view (an employee viewing their
   *own* payslips/leave balance — everything built here is the
   admin/HR-staff surface only).
 - Packaging as an actual Tauri desktop binary — still runs as a Vite web
   preview, per the main README's "Notes on this environment" (no Rust/Cargo
   installed here).
-- Real browser/interaction testing — see the status note at the top.
+- Real browser/interaction testing — see the status note at the top. The
+  new API-client methods were curl-verified against the real backend, but
+  the *pages* that call them (rendering, form interactions, permission
+  gating in the actual UI) have not been clicked through in a browser.
+- Control Center (the platform-admin app) still has none of NEXORA's own
+  onboarding/monitoring surfaces for SAPOK Pay integration status (e.g.
+  whether an organisation has been provisioned as a SAPOK Pay merchant) —
+  that state exists on `Organisation.paymentProviderMerchantId` but nothing
+  in either frontend surfaces it yet.
 
 ## Process change going forward
 

@@ -15,6 +15,12 @@ export const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
 
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+
+  // Phase 6: SAPOK Pay integration (payroll disbursement). Defaults point
+  // at SAPOK Pay's own local dev port/secret so this doesn't need to be
+  // set for everything else in this API to keep working.
+  SAPOK_PAY_API_URL: z.string().default("http://localhost:4100"),
+  SAPOK_PAY_SERVICE_SECRET: z.string().default("replace_with_a_long_random_service_secret"),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

@@ -110,7 +110,7 @@ This platform is built incrementally. Status:
 | 3 | Module + Subscription Engine — plans, subscriptions, billing, receipts, expiry/grace period/suspension, renewal | **Verified working end-to-end** (mock payment gateway) — see [`docs/phase-3-module-subscription-engine.md`](docs/phase-3-module-subscription-engine.md) |
 | 4 | Organisation Platform — org auth, Super Admin, user management, custom roles, departments, branches | **Verified working end-to-end** — see [`docs/phase-4-organisation-platform.md`](docs/phase-4-organisation-platform.md) |
 | 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | **Verified working end-to-end (backend)** — see [`docs/phase-5-employees.md`](docs/phase-5-employees.md), [`docs/phase-5-attendance-leave.md`](docs/phase-5-attendance-leave.md), [`docs/phase-5-payroll.md`](docs/phase-5-payroll.md), [`docs/phase-5-documents-compliance.md`](docs/phase-5-documents-compliance.md) |
-| 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | Superseded by integrating the standalone `sapok-pay` project (see `../sapok-pay`) rather than building this inside Core API — not yet integrated |
+| 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | **Complete** — superseded by integrating the standalone `sapok-pay` project (see `../sapok-pay`) rather than building this inside Core API. An organisation can create employees, run payroll, fund its SAPOK Pay wallet, disburse, reconcile the result against SAPOK Pay's own records, and view a per-employee payslip breakdown — entirely from within NEXORA, verified as one continuous flow — see [`docs/phase-6-payroll-disbursement.md`](docs/phase-6-payroll-disbursement.md) |
 | 7 | NEXORA AI Foundation — Python service, AI gateway, model abstraction, conversations, permissions | Superseded by integrating the standalone `sapok-ai` project (see `../sapok-ai`) — not yet integrated |
 | 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | Superseded by `sapok-ai` — not yet integrated |
 | 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | Superseded by `sapok-ai` — not yet integrated |
@@ -127,22 +127,22 @@ lands — it is not pre-written ahead of the system it describes.
 
 Control Center's UI (auth, dashboard, organisations, platform users, roles,
 billing) is built and mobile-responsive with the custom scrollbar/animation
-polish applied. Organisation Desktop now has a full Phase 5 frontend —
-org login, employees, attendance, leave, payroll, documents and
-compliance — the first four as a dedicated catch-up pass, documents and
-compliance built alongside their backend per the process change below (see [`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md)
+polish applied. Organisation Desktop now has a full frontend across
+**both** Phase 4 (org login, departments, branches, organisation users,
+organisation roles) and Phase 5 (employees, attendance, leave, payroll —
+including disbursement — documents, compliance) — see
+[`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md)
 for exactly what was built and, importantly, **what was and wasn't
-verified**: it type-checks and production-builds cleanly, but has not been
-visually tested in a real browser in this environment, so treat it as
-"should work" rather than "confirmed working" until someone clicks through
-it). Departments, branches, organisation users and organisation roles
-(Phase 4) still have **no frontend at all** — not built, not scheduled
-until their own pass. **Process change going forward**: rather than
-batching several backend-only slices before any UI, every module from here
-on (Documents, Compliance, and beyond) gets its frontend screen built in
-the same pass as its backend, before moving to the next module. Phase 10
-is the next explicit checkpoint the project owner asked to be notified
-about.
+verified**: every new API-client method was curl-verified directly against
+the running backend, and the whole app type-checks and production-builds
+cleanly, but the pages themselves have not been visually tested in a real
+browser in this environment — treat that specific part as "should work"
+rather than "confirmed working" until someone clicks through it. **Process
+carried forward**: every module's frontend gets built in the same pass as
+its backend (or, where a backend shipped ahead of its UI, closed out in a
+dedicated catch-up pass immediately after) rather than left indefinitely
+backend-only. Phase 10 is the next explicit checkpoint the project owner
+asked to be notified about.
 
 ### Design constraint carried forward to Phase 9
 
