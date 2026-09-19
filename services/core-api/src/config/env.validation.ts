@@ -21,6 +21,11 @@ export const envSchema = z.object({
   // set for everything else in this API to keep working.
   SAPOK_PAY_API_URL: z.string().default("http://localhost:4100"),
   SAPOK_PAY_SERVICE_SECRET: z.string().default("replace_with_a_long_random_service_secret"),
+
+  // Phase 7: SAPOK AI integration (assistant conversations, knowledge
+  // search) — same reasoning as SAPOK_PAY above.
+  SAPOK_AI_API_URL: z.string().default("http://localhost:4200"),
+  SAPOK_AI_SERVICE_SECRET: z.string().default("replace_with_a_long_random_service_secret"),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

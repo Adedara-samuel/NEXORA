@@ -26,7 +26,7 @@ export function LoginPage() {
     mutationFn: (input: OrganisationLoginInput) => apiClient.auth.organisationLogin(input.organisationSlug, input.email, input.password),
     onSuccess: (tokens, variables) => {
       setTokens(tokens, variables.organisationSlug);
-      navigate("/employees", { replace: true });
+      navigate("/dashboard", { replace: true });
     },
     onError: (error) => {
       if (error instanceof NexoraApiError && error.code === "ACCOUNT_DISABLED") {

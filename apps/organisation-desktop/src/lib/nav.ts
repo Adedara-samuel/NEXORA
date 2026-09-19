@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Users, CalendarCheck, CalendarClock, Wallet, FileText, ShieldCheck, Building2, UserCog, KeyRound } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, CalendarClock, Wallet, FileText, ShieldCheck, Building2, UserCog, KeyRound, Bot } from "lucide-react";
 
 export interface NavItem {
   label: string;
@@ -9,10 +9,12 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Employees", href: "/employees", icon: Users, permission: "employees:read" },
   { label: "Attendance", href: "/attendance", icon: CalendarCheck, permission: "attendance:read" },
   { label: "Leave", href: "/leave", icon: CalendarClock, permission: "leave:read" },
   { label: "Payroll", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+  { label: "Assistant", href: "/assistant", icon: Bot, permission: "assistant:use" },
   { label: "Documents", href: "/documents", icon: FileText, permission: "documents:read" },
   { label: "Compliance", href: "/compliance", icon: ShieldCheck, permission: "compliance:read" },
   { label: "Structure", href: "/structure", icon: Building2, permission: "departments:read" },

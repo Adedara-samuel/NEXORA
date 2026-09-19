@@ -1,11 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import type { AccessTokenPayload, DashboardSummary } from "@nexora/types";
+import type { AccessTokenPayload, AssistantActionStatus, DashboardSummary } from "@nexora/types";
 import type { OrganisationStatus, PlatformUserStatus, SubscriptionStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 const ORGANISATION_STATUSES: OrganisationStatus[] = ["PENDING", "ACTIVE", "SUSPENDED", "ARCHIVED"];
 const PLATFORM_USER_STATUSES: PlatformUserStatus[] = ["ACTIVE", "DISABLED"];
 const SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ["TRIALING", "ACTIVE", "GRACE_PERIOD", "SUSPENDED", "CANCELLED"];
+const ASSISTANT_ACTION_STATUSES: AssistantActionStatus[] = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "EXECUTED", "FAILED"];
 
 function zeroFilledRecord<K extends string>(keys: K[]): Record<K, number> {
   return Object.fromEntries(keys.map((key) => [key, 0])) as Record<K, number>;
@@ -35,6 +36,9 @@ export class DashboardService {
     }
     if (permissions.has("billing:read")) {
       summary.billing = await this.getBillingSummary();
+    }
+    if (permissions.has("organisations:read")) {
+      summary.assistant = await this.getAssistantSummary();
     }
     if (
       permissions.has("organisations:read") ||
@@ -90,6 +94,28 @@ export class DashboardService {
       revenueThisMonthMinor: revenue._sum.amountMinor ?? 0,
       currency: "NGN",
     };
+  }
+
+  /**
+   * Phase 10 — built entirely from NEXORA's own tables (Organisation,
+   * AssistantActionRequest), never from SAPOK AI's cross-tenant admin
+   * endpoints — see DashboardSummary["assistant"]'s own docstring in
+   * @nexora/types for why crossing that boundary here would be a real
+   * data-leak risk, not just an architectural nicety.
+   */
+  private async getAssistantSummary(): Promise<NonNullable<DashboardSummary["assistant"]>> {
+    const organisationsProvisioned = await this.prisma.organisation.count({ where: { aiProviderDeveloperId: { not: null } } });
+
+    const statusGroups = await this.prisma.assistantActionRequest.groupBy({ by: ["status"], _count: true });
+    const actionsByStatus = zeroFilledRecord(ASSISTANT_ACTION_STATUSES);
+    for (const row of statusGroups) {
+      actionsByStatus[row.status] = row._count;
+    }
+
+    const toolGroups = await this.prisma.assistantActionRequest.groupBy({ by: ["toolName"], _count: true });
+    const actionsByTool = toolGroups.map((row) => ({ toolName: row.toolName, count: row._count }));
+
+    return { organisationsProvisioned, actionsByStatus, actionsByTool };
   }
 
   private async getRecentActivity(): Promise<NonNullable<DashboardSummary["recentActivity"]>> {

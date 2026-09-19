@@ -129,6 +129,48 @@ export default function DashboardPage() {
                 </Reveal>
               )}
 
+              {summary.assistant && (
+                <Reveal delayMs={140}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>AI assistant</CardTitle>
+                      <CardDescription>
+                        Adoption and action volume across organisations, from NEXORA&apos;s own records — not SAPOK AI&apos;s cross-tenant data.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Organisations using the assistant</span>
+                        <span className="text-foreground">
+                          {summary.assistant.organisationsProvisioned.toLocaleString()}
+                          {summary.organisations ? ` of ${summary.organisations.total.toLocaleString()}` : ""}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">Proposed actions by status</span>
+                        {(Object.keys(summary.assistant.actionsByStatus) as (keyof typeof summary.assistant.actionsByStatus)[]).map((status) => (
+                          <div key={status} className="flex items-center justify-between">
+                            <span className="text-muted-foreground">{humanizeAction(status)}</span>
+                            <span className="text-foreground">{summary.assistant!.actionsByStatus[status].toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {summary.assistant.actionsByTool.length > 0 && (
+                        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground">By tool</span>
+                          {summary.assistant.actionsByTool.map((tool) => (
+                            <div key={tool.toolName} className="flex items-center justify-between">
+                              <span className="text-muted-foreground">{tool.toolName}</span>
+                              <span className="text-foreground">{tool.count.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Reveal>
+              )}
+
               {summary.recentActivity && (
                 <Reveal delayMs={160}>
                   <Card>

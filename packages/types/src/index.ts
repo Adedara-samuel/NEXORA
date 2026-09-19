@@ -13,3 +13,5 @@ export * from "./leave";
 export * from "./payroll";
 export * from "./document";
 export * from "./compliance";
+export * from "./assistant";
+export * from "./organisation-dashboard";

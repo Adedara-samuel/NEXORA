@@ -58,6 +58,9 @@ const ORGANISATION_PERMISSIONS: { key: string; description: string; category: st
   { key: "compliance:read", description: "View compliance records", category: "compliance" },
   { key: "compliance:create", description: "Add compliance records", category: "compliance" },
   { key: "compliance:update", description: "Update compliance records", category: "compliance" },
+  { key: "assistant:use", description: "Use the AI assistant — conversations and knowledge search, via SAPOK AI", category: "assistant" },
+  { key: "assistant:manage_knowledge", description: "Add and remove knowledge base entries the assistant can retrieve", category: "assistant" },
+  { key: "audit:read", description: "View the organisation's recent activity log on the dashboard", category: "audit" },
 ];
 
 /**
@@ -84,6 +87,7 @@ const MODULES: { key: string; name: string; description: string }[] = [
   { key: "documents", name: "Documents", description: "Document storage and compliance records" },
   { key: "compliance", name: "Compliance", description: "Regulatory compliance tracking" },
   { key: "payroll", name: "Payroll", description: "Payroll processing and payslips" },
+  { key: "assistant", name: "AI Assistant", description: "Conversational AI assistant and knowledge search, powered by SAPOK AI" },
 ];
 
 /** Demo plans — real pricing/tiers are a business decision, replace before launch. */
@@ -104,10 +108,10 @@ const PLANS: { name: string; description: string; priceMinor: number; billingCyc
   },
   {
     name: "Enterprise",
-    description: "Full platform including payroll",
+    description: "Full platform including payroll and the AI assistant",
     priceMinor: 8_000_000,
     billingCycle: "ANNUALLY",
-    moduleKeys: ["employees", "attendance", "leave", "documents", "compliance", "payroll"],
+    moduleKeys: ["employees", "attendance", "leave", "documents", "compliance", "payroll", "assistant"],
   },
 ];
 
@@ -158,6 +162,22 @@ async function main(): Promise<void> {
     });
   }
   console.log(`Seeded ${ORGANISATION_PERMISSIONS.length} organisation permissions.`);
+
+  // A SUPER_ADMIN role is described as "Full access within this
+  // organisation" (see OrganisationRbacService.ensureSuperAdminRole), but it
+  // only receives permissions when the role is first created — so every
+  // permission added to the catalog later (assistant:*, audit:read, ...)
+  // would silently be missing from every organisation that already existed.
+  // Top the system role up on every seed run so it always means what it says.
+  const allOrganisationPermissions = await prisma.organisationPermission.findMany({ select: { id: true } });
+  const superAdminRoles = await prisma.organisationRole.findMany({ where: { name: "SUPER_ADMIN", isSystem: true }, select: { id: true } });
+  for (const role of superAdminRoles) {
+    await prisma.organisationRolePermission.createMany({
+      data: allOrganisationPermissions.map((permission) => ({ roleId: role.id, permissionId: permission.id })),
+      skipDuplicates: true,
+    });
+  }
+  console.log(`Topped up ${superAdminRoles.length} organisation SUPER_ADMIN role(s) with the full permission catalog.`);
 
   for (const module of MODULES) {
     await prisma.module.upsert({ where: { key: module.key }, update: { name: module.name, description: module.description }, create: module });

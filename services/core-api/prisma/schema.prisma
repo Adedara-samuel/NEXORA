@@ -220,6 +220,15 @@ model Organisation {
   /// holds anything that matters in production.
   paymentProviderMerchantId String?
   paymentProviderApiKey     String?
+  /// Set once this organisation has a provisioned Developer account in
+  /// SAPOK AI (see docs/phase-7-ai-foundation.md) — null until the first
+  /// assistant interaction. One SAPOK AI Developer per Organisation, same
+  /// tenant-isolation shape as the SAPOK Pay Merchant above, so an org's
+  /// knowledge base/conversations can never mix with another's.
+  /// aiProviderApiKey stored in plain text — same known gap as
+  /// paymentProviderApiKey above.
+  aiProviderDeveloperId String?
+  aiProviderApiKey      String?
   createdById  String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -240,6 +249,7 @@ model Organisation {
   payslips      Payslip[]
   documents     Document[]
   complianceRecords ComplianceRecord[]
+  assistantActionRequests AssistantActionRequest[]
 
   @@index([status])
   @@map("organisations")
@@ -816,4 +826,42 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+/// Phase 9 — AI-mediated business actions: prepare -> human review -> human
+/// approval -> execute, never AI-initiated alone. Deliberately its OWN
+/// table, not a reuse of SAPOK AI's own action_requests (see
+/// docs/phase-9-ai-actions.md): these are real NEXORA business actions
+/// (disbursing payroll, for instance) gated by NEXORA's own
+/// PermissionsGuard/RequirePermissions, which SAPOK AI has no knowledge of
+/// and no ability to enforce. proposedById/decidedById are deliberately
+/// NOT foreign keys, same reasoning as AuditLog.actorId above — always an
+/// OrganisationUser today, but never assumed to be the only possible actor
+/// type forever.
+model AssistantActionRequest {
+  id             String                @id @default(uuid())
+  organisationId String
+  toolName       String
+  arguments      Json
+  reasoning      String?
+  status         AssistantActionStatus @default(PENDING_APPROVAL)
+  result         Json?
+  proposedById   String
+  decidedById    String?
+  createdAt      DateTime              @default(now())
+  decidedAt      DateTime?
+  executedAt     DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@map("assistant_action_requests")
+}
+
+enum AssistantActionStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  EXECUTED
+  FAILED
 }

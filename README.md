@@ -111,10 +111,10 @@ This platform is built incrementally. Status:
 | 4 | Organisation Platform — org auth, Super Admin, user management, custom roles, departments, branches | **Verified working end-to-end** — see [`docs/phase-4-organisation-platform.md`](docs/phase-4-organisation-platform.md) |
 | 5 | Business Modules — employees, attendance, leave, documents, compliance, payroll | **Verified working end-to-end (backend)** — see [`docs/phase-5-employees.md`](docs/phase-5-employees.md), [`docs/phase-5-attendance-leave.md`](docs/phase-5-attendance-leave.md), [`docs/phase-5-payroll.md`](docs/phase-5-payroll.md), [`docs/phase-5-documents-compliance.md`](docs/phase-5-documents-compliance.md) |
 | 6 | NEXORA PAY — wallet ledger, bank connections, payment batches, reconciliation, payslips | **Complete** — superseded by integrating the standalone `sapok-pay` project (see `../sapok-pay`) rather than building this inside Core API. An organisation can create employees, run payroll, fund its SAPOK Pay wallet, disburse, reconcile the result against SAPOK Pay's own records, and view a per-employee payslip breakdown — entirely from within NEXORA, verified as one continuous flow — see [`docs/phase-6-payroll-disbursement.md`](docs/phase-6-payroll-disbursement.md) |
-| 7 | NEXORA AI Foundation — Python service, AI gateway, model abstraction, conversations, permissions | Superseded by integrating the standalone `sapok-ai` project (see `../sapok-ai`) — not yet integrated |
-| 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | Superseded by `sapok-ai` — not yet integrated |
-| 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | Superseded by `sapok-ai` — not yet integrated |
-| 10 | NEXORA Intelligence Platform — feedback, evaluation, training data, model registry | Not started |
+| 7 | NEXORA AI Foundation — Python service, AI gateway, model abstraction, conversations, permissions | **Verified working end-to-end** — integrated the standalone `sapok-ai` project (see `../sapok-ai`, itself now a completed 15-phase build) rather than building a second implementation inside Core API; one SAPOK AI Developer account per Organisation, permission-aware knowledge search enforced through the same `PermissionsGuard` every other endpoint uses — see [`docs/phase-7-ai-foundation.md`](docs/phase-7-ai-foundation.md) |
+| 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | **Verified working end-to-end** — organisations ingest real text knowledge entries into `sapok-ai`, gated by their own real permission catalog; a two-user, permission-aware retrieval test confirmed one user's role sees a gated entry and another's doesn't. A later security review then found and fixed two authorization bugs in this phase's read endpoints (a gated entry's content was readable by any `assistant:use` holder, and route ids allowed path traversal onto other SAPOK AI endpoints) — now covered by Core API's first jest spec; see [`docs/phase-8-nexora-knowledge.md`](docs/phase-8-nexora-knowledge.md) |
+| 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | **Verified working end-to-end** — a real, NEXORA-native action-approval system (not a `sapok-ai` integration this time: the actions are NEXORA business logic gated by NEXORA's own RBAC, which SAPOK AI has no way to enforce). First action tool: payroll disbursement, with server-enforced maker-checker approval — see [`docs/phase-9-ai-actions.md`](docs/phase-9-ai-actions.md) |
+| 10 | NEXORA Intelligence Platform — feedback, evaluation, training data, model registry | **Feedback and evaluation verified working; training data and model registry deliberately not built** — organisations rate assistant replies and see their own feedback trend (via a new tenant-scoped `sapok-ai` endpoint); Control Center shows platform-wide adoption and action volume from NEXORA's own data. SAPOK AI's training-data export is cross-tenant so it stays out of NEXORA entirely, and there is no trained model to put in a registry — see [`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md) |
 | 11 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | Not started |
 | 12 | Deployment — production Docker, CI/CD, monitoring, backups, desktop release | Not started |
 
@@ -128,21 +128,44 @@ lands — it is not pre-written ahead of the system it describes.
 Control Center's UI (auth, dashboard, organisations, platform users, roles,
 billing) is built and mobile-responsive with the custom scrollbar/animation
 polish applied. Organisation Desktop now has a full frontend across
-**both** Phase 4 (org login, departments, branches, organisation users,
-organisation roles) and Phase 5 (employees, attendance, leave, payroll —
-including disbursement — documents, compliance) — see
-[`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md)
-for exactly what was built and, importantly, **what was and wasn't
-verified**: every new API-client method was curl-verified directly against
-the running backend, and the whole app type-checks and production-builds
-cleanly, but the pages themselves have not been visually tested in a real
-browser in this environment — treat that specific part as "should work"
-rather than "confirmed working" until someone clicks through it. **Process
-carried forward**: every module's frontend gets built in the same pass as
-its backend (or, where a backend shipped ahead of its UI, closed out in a
+Phase 4 (org login, departments, branches, organisation users, organisation
+roles), Phase 5 (employees, attendance, leave, payroll — including
+disbursement — documents, compliance), **Phase 7** (a conversation list,
+message thread, and permission-aware knowledge-search panel at
+`/assistant`, gated by the new `assistant:use` permission the same way
+every other nav item is gated by its own), **Phase 8** (a "Manage
+knowledge" panel on the same page, gated by a stricter
+`assistant:manage_knowledge` permission — add/list/delete knowledge
+entries, with a required-permission dropdown sourced from the org's own
+real permission catalog), **Phase 9** (an "Actions" panel — propose a
+registered business action, approve/reject/execute it, with the approve
+button disabled when the viewer is the action's own proposer), **Phase 10**
+(thumbs up/down under every assistant reply, plus a reply-feedback summary
+card; Control Center's dashboard gains an "AI assistant" adoption card), and
+a real **Dashboard** landing page for Organisation Desktop (headcount,
+attendance, leave, department distribution, payroll, items needing attention,
+recent activity — every widget backed by real data, sections gated by the
+caller's own permissions) — see
+[`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md),
+[`docs/phase-7-ai-foundation.md`](docs/phase-7-ai-foundation.md),
+[`docs/phase-8-nexora-knowledge.md`](docs/phase-8-nexora-knowledge.md),
+[`docs/phase-9-ai-actions.md`](docs/phase-9-ai-actions.md),
+[`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md) and
+[`docs/organisation-dashboard.md`](docs/organisation-dashboard.md) for exactly what
+was built and, importantly, **what was and wasn't verified**:
+every new API-client method was curl-verified directly against the running
+backend, and the whole app type-checks and production-builds cleanly, but
+the Dashboard and Assistant pages have now also been driven through the real
+sign-in form and real clicks in headless Chrome (the dashboard in dark and
+light themes, the assistant page in dark) with screenshots reviewed. **Every other page has still not been visually tested
+in a real browser in this environment** — treat those as "should work" rather
+than "confirmed working" until someone clicks through them. **Process carried
+forward**: every module's frontend gets built in the same pass as its
+backend (or, where a backend shipped ahead of its UI, closed out in a
 dedicated catch-up pass immediately after) rather than left indefinitely
-backend-only. Phase 10 is the next explicit checkpoint the project owner
-asked to be notified about.
+backend-only. **Phase 10 was the explicit checkpoint the project owner asked
+to be notified about — it has now been reached.** Phase 11 (Security +
+Quality) is next.
 
 ### Design constraint carried forward to Phase 9
 

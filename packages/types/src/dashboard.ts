@@ -1,6 +1,7 @@
 import type { OrganisationStatus } from "./organisation";
 import type { PlatformUserStatus } from "./platform-user";
 import type { SubscriptionStatus } from "./billing";
+import type { AssistantActionStatus } from "./assistant";
 
 export interface RecentActivityEntry {
   id: string;
@@ -36,4 +37,19 @@ export interface DashboardSummary {
     currency: string;
   };
   recentActivity?: RecentActivityEntry[];
+  /**
+   * Phase 10 — platform-wide AI adoption/health, built entirely from
+   * NEXORA's own data (organisations.aiProviderDeveloperId,
+   * assistant_action_requests). Deliberately does NOT touch SAPOK AI's
+   * cross-tenant training-data export or admin feedback summary — those
+   * aggregate across every SAPOK AI developer on the platform (every
+   * NEXORA organisation AND any other product built on SAPOK AI), which a
+   * NEXORA platform admin has no business seeing. This section only ever
+   * reflects what NEXORA itself already knows about its own organisations.
+   */
+  assistant?: {
+    organisationsProvisioned: number;
+    actionsByStatus: Record<AssistantActionStatus, number>;
+    actionsByTool: { toolName: string; count: number }[];
+  };
 }

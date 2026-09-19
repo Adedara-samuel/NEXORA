@@ -21,6 +21,8 @@ import { LeaveModule } from "./leave/leave.module";
 import { PayrollModule } from "./payroll/payroll.module";
 import { DocumentsModule } from "./documents/documents.module";
 import { ComplianceModule } from "./compliance/compliance.module";
+import { AssistantModule } from "./assistant/assistant.module";
+import { OrganisationDashboardModule } from "./organisation-dashboard/organisation-dashboard.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
@@ -52,6 +54,8 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     PayrollModule,
     DocumentsModule,
     ComplianceModule,
+    AssistantModule,
+    OrganisationDashboardModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

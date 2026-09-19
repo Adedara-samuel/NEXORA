@@ -1,5 +1,14 @@
 import type {
   ApiResult,
+  AssistantActionRequest,
+  AssistantActionToolDescriptor,
+  AssistantConversation,
+  AssistantConversationWithMessages,
+  AssistantFeedbackSummary,
+  AssistantKnowledgeEntry,
+  AssistantKnowledgeEntryWithChunks,
+  AssistantKnowledgeResult,
+  AssistantMessageFeedback,
   Attendance,
   AuthTokens,
   Branch,
@@ -11,6 +20,7 @@ import type {
   LeaveRequest,
   ModuleCatalogEntry,
   Organisation,
+  OrganisationDashboardSummary,
   OrganisationDocument,
   OrganisationTaxSettings,
   OrganisationUser,
@@ -24,6 +34,7 @@ import type {
   Permission,
   Plan,
   PlatformUser,
+  PostAssistantMessageResult,
   RecentActivityEntry,
   Role,
   Subscription,
@@ -37,6 +48,9 @@ import type {
   CreateDocumentInput,
   CreateEmployeeInput,
   CreateLeaveRequestInput,
+  CreateAssistantConversationInput,
+  CreateAssistantKnowledgeEntryInput,
+  ProposeAssistantActionInput,
   CreateOrganisationInput,
   CreateOrganisationRoleInput,
   CreateOrganisationUserInput,
@@ -55,8 +69,11 @@ import type {
   ListOrganisationsQuery,
   ListOrganisationUsersQuery,
   ListPlatformUsersQuery,
+  PostAssistantMessageInput,
   RenewSubscriptionInput,
   RunPayrollInput,
+  SearchAssistantKnowledgeInput,
+  SubmitAssistantMessageFeedbackInput,
   UpdateAttendanceInput,
   UpdateComplianceRecordInput,
   UpdateDocumentInput,
@@ -356,6 +373,54 @@ export class NexoraApiClient {
       }),
 
     reconcile: (id: string): Promise<PayrollReconciliationReport> => this.request(`/api/v1/organisation/payroll/runs/${id}/reconcile`),
+  };
+
+  organisationDashboard = {
+    getSummary: (): Promise<OrganisationDashboardSummary> => this.request("/api/v1/organisation/dashboard/summary"),
+  };
+
+  assistant = {
+    createConversation: (input: CreateAssistantConversationInput = {}): Promise<AssistantConversation> =>
+      this.request("/api/v1/organisation/assistant/conversations", { method: "POST", body: JSON.stringify(input) }),
+
+    listConversations: (): Promise<AssistantConversation[]> => this.request("/api/v1/organisation/assistant/conversations"),
+
+    getConversation: (id: string): Promise<AssistantConversationWithMessages> => this.request(`/api/v1/organisation/assistant/conversations/${id}`),
+
+    postMessage: (id: string, input: PostAssistantMessageInput): Promise<PostAssistantMessageResult> =>
+      this.request(`/api/v1/organisation/assistant/conversations/${id}/messages`, { method: "POST", body: JSON.stringify(input) }),
+
+    submitMessageFeedback: (conversationId: string, messageId: string, input: SubmitAssistantMessageFeedbackInput): Promise<AssistantMessageFeedback> =>
+      this.request(`/api/v1/organisation/assistant/conversations/${conversationId}/messages/${messageId}/feedback`, { method: "POST", body: JSON.stringify(input) }),
+
+    getFeedbackSummary: (): Promise<AssistantFeedbackSummary> => this.request("/api/v1/organisation/assistant/feedback-summary"),
+
+    searchKnowledge: (input: SearchAssistantKnowledgeInput): Promise<AssistantKnowledgeResult[]> =>
+      this.request("/api/v1/organisation/assistant/knowledge/search", { method: "POST", body: JSON.stringify(input) }),
+
+    listKnowledgeEntries: (): Promise<AssistantKnowledgeEntry[]> => this.request("/api/v1/organisation/assistant/knowledge"),
+
+    getKnowledgeEntry: (id: string): Promise<AssistantKnowledgeEntryWithChunks> => this.request(`/api/v1/organisation/assistant/knowledge/${id}`),
+
+    createKnowledgeEntry: (input: CreateAssistantKnowledgeEntryInput): Promise<AssistantKnowledgeEntry> =>
+      this.request("/api/v1/organisation/assistant/knowledge", { method: "POST", body: JSON.stringify(input) }),
+
+    deleteKnowledgeEntry: (id: string): Promise<{ deleted: true }> => this.request(`/api/v1/organisation/assistant/knowledge/${id}`, { method: "DELETE" }),
+
+    listActionTools: (): Promise<AssistantActionToolDescriptor[]> => this.request("/api/v1/organisation/assistant/actions/tools"),
+
+    proposeAction: (input: ProposeAssistantActionInput): Promise<AssistantActionRequest> =>
+      this.request("/api/v1/organisation/assistant/actions", { method: "POST", body: JSON.stringify(input) }),
+
+    listActions: (): Promise<AssistantActionRequest[]> => this.request("/api/v1/organisation/assistant/actions"),
+
+    getAction: (id: string): Promise<AssistantActionRequest> => this.request(`/api/v1/organisation/assistant/actions/${id}`),
+
+    approveAction: (id: string): Promise<AssistantActionRequest> => this.request(`/api/v1/organisation/assistant/actions/${id}/approve`, { method: "POST" }),
+
+    rejectAction: (id: string): Promise<AssistantActionRequest> => this.request(`/api/v1/organisation/assistant/actions/${id}/reject`, { method: "POST" }),
+
+    executeAction: (id: string): Promise<AssistantActionRequest> => this.request(`/api/v1/organisation/assistant/actions/${id}/execute`, { method: "POST" }),
   };
 
   documents = {
