@@ -1,21 +1,23 @@
-# NEXORA
+# Sapok OneGrid
 
 Enterprise-grade, multi-tenant organisational management platform. Owned and
-operated by **SAPOK TECH**.
+operated by **SAPOK TECH** — the same parent brand behind SAPOK Pay and
+SAPOK AI. (Formerly known as NEXORA — the rename is cosmetic; the
+architecture, code, and phase history below are unchanged.)
 
-NEXORA consists of two user-facing applications sharing one backend:
+Sapok OneGrid consists of two user-facing applications sharing one backend:
 
-- **NEXORA Control Center** (`apps/control-center`) — the web app SAPOK TECH
-  platform administrators use to onboard organisations, manage subscriptions
-  and modules, and monitor the ecosystem.
-- **NEXORA Organisation Desktop** (`apps/organisation-desktop`) — one Tauri
-  desktop application used by every organisation; the authenticated session
-  determines organisation identity, subscription, enabled modules, roles and
-  permissions.
+- **Sapok OneGrid Control Center** (`apps/control-center`) — the web app
+  SAPOK TECH platform administrators use to onboard organisations, manage
+  subscriptions and modules, and monitor the ecosystem.
+- **Sapok OneGrid Organisation Desktop** (`apps/organisation-desktop`) — one
+  Tauri desktop application used by every organisation; the authenticated
+  session determines organisation identity, subscription, enabled modules,
+  roles and permissions.
 
-Both talk to the **NEXORA Core API** (`services/core-api`, NestJS), the
-single source of truth. PostgreSQL (with pgvector for future AI phases) and
-Redis back the API; the **NEXORA AI Service** (`services/ai-service`,
+Both talk to the **Sapok OneGrid Core API** (`services/core-api`, NestJS),
+the single source of truth. PostgreSQL (with pgvector for future AI phases)
+and Redis back the API; the **Sapok OneGrid AI Service** (`services/ai-service`,
 Python/FastAPI) arrives in Phase 7.
 
 ## Monorepo layout
@@ -26,7 +28,7 @@ apps/
   organisation-desktop/  Tauri + React — organisation-facing desktop app
 services/
   core-api/               NestJS + Prisma — the backend for both apps
-  ai-service/              Python/FastAPI — NEXORA Intelligence Layer (Phase 7+)
+  ai-service/              Python/FastAPI — Sapok OneGrid Intelligence Layer (Phase 7+)
 workers/
   payroll-worker/          BullMQ workers — each not started until the phase
   payment-worker/          that needs it (see each worker's README)

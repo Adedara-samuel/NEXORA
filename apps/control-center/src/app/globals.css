@@ -3,25 +3,27 @@
 @tailwind utilities;
 
 /*
- * NEXORA brand palette — derived from the mark (electric blue/cyan "N" on
- * near-black). Light is the baseline token set; dark redefines the same
- * tokens under a system-preference media query and an explicit
- * [data-theme="dark"] override (set by the ThemeProvider), so the toggle
- * always wins over the OS preference. Never give a token its only
- * definition inside a media/data-theme block.
+ * Sapok OneGrid brand palette — derived from the mark (the SAPOK green
+ * ribbon "S"/OneGrid "G", #00C896 on near-black). Light is the baseline
+ * token set; dark redefines the same tokens under a system-preference
+ * media query and an explicit [data-theme="dark"] override (set by the
+ * ThemeProvider), so the toggle always wins over the OS preference. Never
+ * give a token its only definition inside a media/data-theme block.
+ * `--success` is kept a distinct, more yellow-leaning green so a success
+ * badge never reads as "the brand colour" at a glance.
  */
 :root {
   --background: 210 40% 99%;
   --surface: 0 0% 100%;
   --foreground: 222 47% 11%;
-  --primary: 217 91% 50%;
+  --primary: 165 100% 33%;
   --primary-foreground: 210 40% 98%;
-  --accent: 189 85% 38%;
+  --accent: 174 80% 40%;
   --accent-foreground: 210 40% 98%;
   --muted: 210 30% 95%;
   --muted-foreground: 215 16% 42%;
   --border: 214 32% 88%;
-  --success: 152 65% 34%;
+  --success: 100 60% 32%;
   --danger: 0 72% 45%;
   --radius: 0.75rem;
   --font-display: "Orbitron", system-ui, sans-serif;
@@ -32,14 +34,14 @@
     --background: 222 47% 4%;
     --surface: 222 40% 8%;
     --foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --accent: 189 94% 55%;
+    --primary: 165 90% 45%;
+    --primary-foreground: 222 47% 6%;
+    --accent: 174 85% 55%;
     --accent-foreground: 222 47% 6%;
     --muted: 222 30% 14%;
     --muted-foreground: 215 20% 65%;
     --border: 222 30% 18%;
-    --success: 152 76% 45%;
+    --success: 100 65% 48%;
     --danger: 0 84% 63%;
   }
 }
@@ -48,14 +50,14 @@
   --background: 222 47% 4%;
   --surface: 222 40% 8%;
   --foreground: 210 40% 98%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 210 40% 98%;
-  --accent: 189 94% 55%;
+  --primary: 165 90% 45%;
+  --primary-foreground: 222 47% 6%;
+  --accent: 174 85% 55%;
   --accent-foreground: 222 47% 6%;
   --muted: 222 30% 14%;
   --muted-foreground: 215 20% 65%;
   --border: 222 30% 18%;
-  --success: 152 76% 45%;
+  --success: 100 65% 48%;
   --danger: 0 84% 63%;
 }
 

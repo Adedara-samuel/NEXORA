@@ -330,7 +330,7 @@ function ActionsCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-xs text-muted-foreground">
-          Real business actions, gated the same way as everywhere else in NEXORA: proposing, approving, and executing all require the exact permission the underlying action needs
+          Real business actions, gated the same way as everywhere else in Sapok OneGrid: proposing, approving, and executing all require the exact permission the underlying action needs
           (e.g. <code>payroll:disburse</code>). A proposal can never be approved by the same person who made it — a different authorised user has to review it.
         </p>
 

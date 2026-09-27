@@ -13,7 +13,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <SplashScreen logoSrc="/nexora-logo.png" ready={hydrated}>
+          <SplashScreen logoSrc="/onegrid-icon.png" ready={hydrated}>
             {children}
           </SplashScreen>
         </ToastProvider>

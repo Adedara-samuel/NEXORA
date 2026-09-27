@@ -1,7 +1,7 @@
 [package]
 name = "nexora-desktop"
 version = "0.1.0"
-description = "NEXORA Organisation Desktop — native shell"
+description = "Sapok OneGrid Organisation Desktop — native shell"
 edition = "2021"
 
 [build-dependencies]

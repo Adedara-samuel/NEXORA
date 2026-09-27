@@ -7,6 +7,7 @@ export * from "./components/checkbox";
 export * from "./components/badge";
 export * from "./components/logo";
 export * from "./components/wordmark";
+export * from "./components/powered-by-sapok";
 export * from "./components/splash-screen";
 export * from "./components/reveal";
 export * from "./components/toast";

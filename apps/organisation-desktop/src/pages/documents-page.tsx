@@ -22,7 +22,7 @@ export default function DocumentsPage() {
         <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Documents</h1>
           <p className="text-sm text-muted-foreground">
-            Metadata only — NEXORA doesn't host files yet. Link to a file you already store elsewhere (Drive, S3, etc).
+            Metadata only — Sapok OneGrid doesn't host files yet. Link to a file you already store elsewhere (Drive, S3, etc).
           </p>
         </Reveal>
 

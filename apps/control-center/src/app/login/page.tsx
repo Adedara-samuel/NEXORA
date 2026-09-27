@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BarChart3, Eye, EyeOff, Lock, Mail, ShieldCheck, Users, Wallet } from "lucide-react";
 import { platformLoginSchema, type PlatformLoginInput } from "@nexora/validation";
-import { Button, HudFrame, Input, Label, Logo, Reveal, SystemStatus, ThemeToggle, Wordmark, useToast } from "@nexora/ui";
+import { Button, HudFrame, Input, Label, Logo, PoweredBySapok, Reveal, SystemStatus, ThemeToggle, Wordmark, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -59,7 +59,7 @@ export default function LoginPage() {
       }
       toast({
         variant: "error",
-        title: "Can't reach NEXORA",
+        title: "Can't reach Sapok OneGrid",
         description: "The Core API didn't respond. Check your connection and try again.",
       });
     },
@@ -84,7 +84,7 @@ export default function LoginPage() {
 
         <Reveal className="relative flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Logo src="/nexora-logo.png" className="h-8 w-8 object-contain" />
+            <Logo src="/onegrid-icon.png" className="h-8 w-8 object-contain" />
             <Wordmark size="sm" />
           </div>
           <SystemStatus status={health.isFetching && !health.data && !health.isError ? "checking" : health.isError ? "offline" : "online"} latencyMs={health.data} />
@@ -115,8 +115,8 @@ export default function LoginPage() {
           </div>
         </Reveal>
 
-        <Reveal delayMs={200} className="relative text-xs uppercase tracking-[0.3em] text-muted-foreground">
-          Developed by <span className="text-foreground">SAPOK TECH</span>
+        <Reveal delayMs={200} className="relative">
+          <PoweredBySapok />
         </Reveal>
       </div>
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
 
         <Reveal className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center gap-2 lg:hidden">
-            <Logo src="/nexora-logo.png" className="mb-2 h-12 w-12 object-contain" />
+            <Logo src="/onegrid-icon.png" className="mb-2 h-12 w-12 object-contain" />
             <Wordmark size="lg" />
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Control Center</p>
           </div>
@@ -185,7 +185,9 @@ export default function LoginPage() {
             <SystemStatus status={health.isFetching && !health.data && !health.isError ? "checking" : health.isError ? "offline" : "online"} latencyMs={health.data} />
           </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground lg:hidden">Operated by SAPOK TECH</p>
+          <div className="mt-6 flex justify-center lg:hidden">
+            <PoweredBySapok />
+          </div>
         </Reveal>
       </div>
     </main>

@@ -12,8 +12,8 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "NEXORA Control Center",
-  description: "Platform administration for the NEXORA ecosystem — operated by SAPOK TECH",
+  title: "Sapok OneGrid Control Center",
+  description: "Platform administration for the Sapok OneGrid ecosystem — operated by SAPOK TECH",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

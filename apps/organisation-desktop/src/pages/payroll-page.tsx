@@ -599,7 +599,7 @@ function PayrollRunRow({ runId, canManage, canDisburse }: { runId: string; canMa
                 <thead className="bg-surface text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2">Employee</th>
-                    <th className="px-3 py-2">NEXORA</th>
+                    <th className="px-3 py-2">Sapok OneGrid</th>
                     <th className="px-3 py-2">SAPOK Pay</th>
                     <th className="px-3 py-2">Result</th>
                   </tr>

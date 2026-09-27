@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff, Lock, Mail, Building2 } from "lucide-react";
 import { organisationLoginSchema, type OrganisationLoginInput } from "@nexora/validation";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Reveal, ThemeToggle, Wordmark, useToast } from "@nexora/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, PoweredBySapok, Reveal, ThemeToggle, Wordmark, useToast } from "@nexora/ui";
 import { NexoraApiError } from "@nexora/api-client";
 import { apiClient } from "../lib/api-client";
 import { useAuthStore } from "../store/auth-store";
@@ -37,7 +37,7 @@ export function LoginPage() {
         toast({ variant: "error", title: "Sign-in failed", description: error.message });
         return;
       }
-      toast({ variant: "error", title: "Can't reach NEXORA", description: "The Core API didn't respond. Check your connection and try again." });
+      toast({ variant: "error", title: "Can't reach Sapok OneGrid", description: "The Core API didn't respond. Check your connection and try again." });
     },
   });
 
@@ -46,7 +46,7 @@ export function LoginPage() {
       <ThemeToggle className="absolute right-4 top-4" />
       <Reveal className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-2">
-          <img src="/nexora-logo.png" alt="" className="h-10 w-10 object-contain" draggable={false} />
+          <img src="/onegrid-icon.png" alt="" className="h-10 w-10 object-contain" draggable={false} />
           <Wordmark size="md" />
           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Organisation Desktop</p>
         </div>
@@ -101,6 +101,7 @@ export function LoginPage() {
             </form>
           </CardContent>
         </Card>
+        <PoweredBySapok className="mt-6 justify-center" />
       </Reveal>
     </main>
   );

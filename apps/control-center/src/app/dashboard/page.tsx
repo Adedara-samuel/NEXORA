@@ -135,7 +135,7 @@ export default function DashboardPage() {
                     <CardHeader>
                       <CardTitle>AI assistant</CardTitle>
                       <CardDescription>
-                        Adoption and action volume across organisations, from NEXORA&apos;s own records — not SAPOK AI&apos;s cross-tenant data.
+                        Adoption and action volume across organisations, from Sapok OneGrid&apos;s own records — not SAPOK AI&apos;s cross-tenant data.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3 text-sm">

@@ -25,8 +25,8 @@ async function bootstrap(): Promise<void> {
 
   if (config.get<string>("NODE_ENV") !== "production") {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle("NEXORA Core API")
-      .setDescription("Backend API for NEXORA Control Center and NEXORA Organisation Desktop")
+      .setTitle("Sapok OneGrid Core API")
+      .setDescription("Backend API for Sapok OneGrid Control Center and Sapok OneGrid Organisation Desktop")
       .setVersion("1.0")
       .addBearerAuth()
       .build();
@@ -36,7 +36,7 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get<number>("CORE_API_PORT", 4000);
   await app.listen(port);
-  logger.log(`NEXORA Core API listening on http://localhost:${port}/${globalPrefix}`);
+  logger.log(`Sapok OneGrid Core API listening on http://localhost:${port}/${globalPrefix}`);
 }
 
 bootstrap();

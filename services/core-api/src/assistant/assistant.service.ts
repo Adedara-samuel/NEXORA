@@ -87,7 +87,7 @@ export class AssistantService {
     const keyResponse = await fetch(`${this.sapokAiUrl()}/api/v1/api-keys`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${signupBody.access_token}` },
-      body: JSON.stringify({ name: "NEXORA Core API" }),
+      body: JSON.stringify({ name: "Sapok OneGrid Core API" }),
     });
     const key = (await keyResponse.json()) as { rawKey?: string; error?: { message: string } };
     if (!keyResponse.ok || !key.rawKey) {

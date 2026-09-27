@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { ThemeToggle, Wordmark, cn } from "@nexora/ui";
+import { PoweredBySapok, ThemeToggle, Wordmark, cn } from "@nexora/ui";
 import { NAV_ITEMS } from "@/lib/nav";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <aside className="flex w-60 shrink-0 flex-col border-r border-border px-4 py-6">
         <div className="mb-8 flex items-center gap-2 px-2">
-          <img src="/nexora-logo.png" alt="" className="h-6 w-6 object-contain" draggable={false} />
+          <img src="/onegrid-icon.png" alt="" className="h-6 w-6 object-contain" draggable={false} />
           <Wordmark size="sm" />
         </div>
 
@@ -71,6 +71,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <LogOut className="h-4 w-4" />
           Log out
         </button>
+
+        <PoweredBySapok className="mt-4 justify-center" />
       </aside>
 
       <div className="flex flex-1 flex-col">

@@ -205,7 +205,7 @@ export class OrganisationDashboardService {
       resourceType: log.resourceType,
       resourceId: log.resourceId,
       // Platform staff are deliberately shown as the platform, never by name.
-      actorName: log.actorType === "PLATFORM_USER" ? "NEXORA Platform" : log.actorId ? (nameByUserId.get(log.actorId) ?? null) : null,
+      actorName: log.actorType === "PLATFORM_USER" ? "Sapok OneGrid Platform" : log.actorId ? (nameByUserId.get(log.actorId) ?? null) : null,
       actorType: log.actorType,
       createdAt: log.createdAt.toISOString(),
     }));

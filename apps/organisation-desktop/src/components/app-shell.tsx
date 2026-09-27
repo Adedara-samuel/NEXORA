@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, LockKeyhole, LogOut, Menu, X } from "lucide-react";
-import { ThemeToggle, Wordmark, cn } from "@nexora/ui";
+import { PoweredBySapok, ThemeToggle, Wordmark, cn } from "@nexora/ui";
 import { NAV_ITEMS } from "../lib/nav";
 import { apiClient } from "../lib/api-client";
 import { useAuthStore } from "../store/auth-store";
 import { isOrganisationLockedOut, useEntitlements } from "../lib/entitlements";
 
 const LOCKOUT_COPY: Record<string, { title: string; body: string }> = {
-  PENDING: { title: "Your organisation isn't active yet", body: "A platform administrator needs to activate your organisation before you can sign in and use NEXORA." },
+  PENDING: { title: "Your organisation isn't active yet", body: "A platform administrator needs to activate your organisation before you can sign in and use Sapok OneGrid." },
   SUSPENDED: { title: "Access suspended", body: "Your organisation's access has been suspended by a platform administrator. Contact them to restore it." },
   ARCHIVED: { title: "Organisation archived", body: "This organisation has been archived and is no longer accessible." },
   SUBSCRIPTION: { title: "Subscription inactive", body: "Your organisation's subscription isn't active. Contact your platform administrator to renew it." },
@@ -69,7 +69,7 @@ export function AppShell({ children, requiredModule }: { children: ReactNode; re
     <>
       <div className="mb-8 flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          <img src="/nexora-logo.png" alt="" className="h-6 w-6 object-contain" draggable={false} />
+          <img src="/onegrid-icon.png" alt="" className="h-6 w-6 object-contain" draggable={false} />
           <Wordmark size="sm" />
         </div>
         <button className="text-muted-foreground hover:text-foreground md:hidden" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
@@ -103,6 +103,8 @@ export function AppShell({ children, requiredModule }: { children: ReactNode; re
         <LogOut className="h-4 w-4" />
         Log out
       </button>
+
+      <PoweredBySapok className="mt-4 justify-center" />
     </>
   );
 
