@@ -34,3 +34,10 @@ export const renewSubscriptionSchema = z.object({
   simulateFailure: z.boolean().default(false),
 });
 export type RenewSubscriptionInput = z.infer<typeof renewSubscriptionSchema>;
+
+export const setModuleOverrideSchema = z.object({
+  /** true = grant this module even if the plan doesn't include it; false = revoke it even if the plan does; null = clear the override and fall back to the plan. */
+  granted: z.boolean().nullable(),
+  reason: z.string().trim().min(1).max(500).optional(),
+});
+export type SetModuleOverrideInput = z.infer<typeof setModuleOverrideSchema>;

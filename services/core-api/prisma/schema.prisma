@@ -125,19 +125,20 @@ enum EmployeeStatus {
 }
 
 model PlatformUser {
-  id           String              @id @default(uuid())
-  email        String              @unique
+  id           String             @id @default(uuid())
+  email        String             @unique
   passwordHash String
   firstName    String
   lastName     String
-  status       PlatformUserStatus  @default(ACTIVE)
+  status       PlatformUserStatus @default(ACTIVE)
   lastLoginAt  DateTime?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
-  refreshTokens         RefreshToken[]
-  roles                 PlatformUserRole[]
-  organisationsCreated  Organisation[]
+  refreshTokens        RefreshToken[]
+  roles                PlatformUserRole[]
+  organisationsCreated Organisation[]
+  moduleOverridesSet   OrganisationModuleOverride[]
 
   @@map("platform_users")
 }
@@ -201,18 +202,18 @@ model PlatformUserRole {
 /// during onboarding. Deliberately thin at this phase — no subscription,
 /// billing or org-admin-account fields here; those attach in Phase 3/4.
 model Organisation {
-  id           String             @id @default(uuid())
-  name         String
-  slug         String             @unique
-  status       OrganisationStatus @default(PENDING)
-  contactEmail String
-  contactPhone String?
-  industry     String?
+  id                        String             @id @default(uuid())
+  name                      String
+  slug                      String             @unique
+  status                    OrganisationStatus @default(PENDING)
+  contactEmail              String
+  contactPhone              String?
+  industry                  String?
   /// ISO 3166-1 alpha-2 country code — picks which TaxBand catalog applies
   /// to this organisation's payroll by default (see docs/phase-5-payroll.md).
   /// Only "NG" has seeded bands so far; any other country needs
   /// OrganisationTaxSettings.customBands set before payroll can run.
-  countryCode  String             @default("NG")
+  countryCode               String             @default("NG")
   /// Set once this organisation has been provisioned as a Merchant in
   /// SAPOK Pay (see docs/phase-6-payroll-disbursement.md) — null until the
   /// first disbursement attempt. paymentProviderApiKey is stored in plain
@@ -227,29 +228,30 @@ model Organisation {
   /// knowledge base/conversations can never mix with another's.
   /// aiProviderApiKey stored in plain text — same known gap as
   /// paymentProviderApiKey above.
-  aiProviderDeveloperId String?
-  aiProviderApiKey      String?
-  createdById  String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  aiProviderDeveloperId     String?
+  aiProviderApiKey          String?
+  createdById               String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
-  createdBy     PlatformUser?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  subscription  Subscription?
-  users         OrganisationUser[]
-  roles         OrganisationRole[]
-  departments   Department[]
-  branches      Branch[]
-  employees     Employee[]
-  attendanceRecords Attendance[]
-  leaveRequests LeaveRequest[]
-  taxSettings   OrganisationTaxSettings?
-  payrollRuns   PayrollRun[]
-  payslips      Payslip[]
-  documents     Document[]
-  complianceRecords ComplianceRecord[]
+  createdBy               PlatformUser?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  refreshTokens           RefreshToken[]
+  auditLogs               AuditLog[]
+  subscription            Subscription?
+  users                   OrganisationUser[]
+  roles                   OrganisationRole[]
+  departments             Department[]
+  branches                Branch[]
+  employees               Employee[]
+  attendanceRecords       Attendance[]
+  leaveRequests           LeaveRequest[]
+  taxSettings             OrganisationTaxSettings?
+  payrollRuns             PayrollRun[]
+  payslips                Payslip[]
+  documents               Document[]
+  complianceRecords       ComplianceRecord[]
   assistantActionRequests AssistantActionRequest[]
+  moduleOverrides         OrganisationModuleOverride[]
 
   @@index([status])
   @@map("organisations")
@@ -264,9 +266,35 @@ model Module {
   description String?
   createdAt   DateTime @default(now())
 
-  plans PlanModule[]
+  plans                 PlanModule[]
+  organisationOverrides OrganisationModuleOverride[]
 
   @@map("modules")
+}
+
+/// A per-organisation exception to what its Plan would otherwise grant —
+/// the control panel's "fine-tune this one organisation" lever, independent
+/// of which plan they're on. `granted: true` is an add-on (unlocks a module
+/// the plan doesn't include, e.g. a bespoke enterprise deal); `granted: false`
+/// is a manual revoke (withholds a module the plan DOES include, e.g. a
+/// module disabled during a dispute without moving the whole org off its
+/// plan). See EntitlementsService for how this combines with the plan.
+model OrganisationModuleOverride {
+  id             String   @id @default(uuid())
+  organisationId String
+  moduleId       String
+  granted        Boolean
+  reason         String?
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  module       Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdBy    PlatformUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([organisationId, moduleId])
+  @@map("organisation_module_overrides")
 }
 
 model Plan {
@@ -360,14 +388,14 @@ model OrganisationUser {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
-  organisation  Organisation           @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  department    Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  branch        Branch?                @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  roles         OrganisationUserRole[]
-  refreshTokens RefreshToken[]
-  employee      Employee?
+  organisation          Organisation           @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  department            Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  branch                Branch?                @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  roles                 OrganisationUserRole[]
+  refreshTokens         RefreshToken[]
+  employee              Employee?
   approvedLeaveRequests LeaveRequest[]
-  uploadedDocuments Document[]
+  uploadedDocuments     Document[]
 
   @@unique([organisationId, email])
   @@index([organisationId])
@@ -499,10 +527,10 @@ model Employee {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  organisation     Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  department       Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  branch           Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  organisationUser OrganisationUser? @relation(fields: [organisationUserId], references: [id], onDelete: SetNull)
+  organisation      Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  department        Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  branch            Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  organisationUser  OrganisationUser?  @relation(fields: [organisationUserId], references: [id], onDelete: SetNull)
   attendanceRecords Attendance[]
   leaveRequests     LeaveRequest[]
   payslips          Payslip[]
@@ -594,7 +622,7 @@ model LeaveRequest {
 /// currency units (not minor units) so the top band (₦50,000,000) fits an
 /// Int32 column; `upToMajor: null` marks the open-ended top band.
 model TaxBand {
-  id          String  @id @default(uuid())
+  id          String @id @default(uuid())
   countryCode String
   order       Int
   upToMajor   Int?
@@ -609,15 +637,15 @@ model TaxBand {
 /// `customBands` is set it fully replaces the country default; otherwise
 /// payroll falls back to TaxBand rows for Organisation.countryCode.
 model OrganisationTaxSettings {
-  id                  String   @id @default(uuid())
-  organisationId      String   @unique
+  id                 String   @id @default(uuid())
+  organisationId     String   @unique
   /// [{ "upToMajor": number|null, "ratePercent": number }, ...] ascending, last entry upToMajor: null
-  customBands         Json?
+  customBands        Json?
   /// Statutory employee pension contribution, whole percent. Null = use the
   /// platform default for the country (8% for Nigeria, Pension Reform Act).
-  pensionRatePercent  Int?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  pensionRatePercent Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
@@ -648,20 +676,20 @@ enum PayslipDisbursementStatus {
 /// run, never editing figures in place (same immutability principle as
 /// SAPOK Pay's ledger).
 model PayrollRun {
-  id                   String           @id @default(uuid())
-  organisationId       String
-  periodYear           Int
-  periodMonth          Int
-  status               PayrollRunStatus @default(COMPLETED)
-  currency             String           @default("NGN")
-  totalGrossMinor      Int              @default(0)
-  totalDeductionsMinor Int              @default(0)
-  totalNetMinor        Int              @default(0)
-  skippedEmployeeCount Int              @default(0)
+  id                         String                    @id @default(uuid())
+  organisationId             String
+  periodYear                 Int
+  periodMonth                Int
+  status                     PayrollRunStatus          @default(COMPLETED)
+  currency                   String                    @default("NGN")
+  totalGrossMinor            Int                       @default(0)
+  totalDeductionsMinor       Int                       @default(0)
+  totalNetMinor              Int                       @default(0)
+  skippedEmployeeCount       Int                       @default(0)
   /// Phase 6 (SAPOK Pay integration) — separate from `status`, which is
   /// about whether the RUN'S NUMBERS are valid (COMPLETED/CANCELLED).
   /// This tracks whether the money has actually moved yet.
-  disbursementStatus        PayrollDisbursementStatus @default(NOT_DISBURSED)
+  disbursementStatus         PayrollDisbursementStatus @default(NOT_DISBURSED)
   /// SAPOK Pay's PayrollBatch.id, once a disbursement attempt has been made.
   disbursementBatchReference String?
   /// Incremented on every attempt (not just successful ones) — the
@@ -671,9 +699,9 @@ model PayrollRun {
   /// Pay's own idempotency check replaying the first attempt's cached
   /// failure forever. A real bug caught in end-to-end testing, not a
   /// hypothetical — see docs/phase-6-payroll-disbursement.md.
-  disbursementAttempts       Int      @default(0)
-  createdById          String?
-  createdAt            DateTime         @default(now())
+  disbursementAttempts       Int                       @default(0)
+  createdById                String?
+  createdAt                  DateTime                  @default(now())
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   payslips     Payslip[]
@@ -684,22 +712,22 @@ model PayrollRun {
 }
 
 model Payslip {
-  id                   String   @id @default(uuid())
-  payrollRunId         String
-  organisationId       String
-  employeeId           String
-  grossMinor           Int
-  pensionMinor         Int      @default(0)
-  payeMinor            Int      @default(0)
-  otherDeductionsMinor Int      @default(0)
-  netMinor             Int
-  currency             String
+  id                        String                     @id @default(uuid())
+  payrollRunId              String
+  organisationId            String
+  employeeId                String
+  grossMinor                Int
+  pensionMinor              Int                        @default(0)
+  payeMinor                 Int                        @default(0)
+  otherDeductionsMinor      Int                        @default(0)
+  netMinor                  Int
+  currency                  String
   /// Computation trail for auditability: { annualGrossMajor, annualTaxableMajor, bandsApplied: [...] }
-  breakdown            Json
+  breakdown                 Json
   /// Null until a disbursement attempt has been made for this payslip.
-  disbursementStatus         PayslipDisbursementStatus?
-  disbursementFailureReason  String?
-  createdAt            DateTime @default(now())
+  disbursementStatus        PayslipDisbursementStatus?
+  disbursementFailureReason String?
+  createdAt                 DateTime                   @default(now())
 
   payrollRun   PayrollRun   @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)

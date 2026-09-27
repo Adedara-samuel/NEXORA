@@ -24,14 +24,21 @@ export class UnauthorizedApiException extends ApiException {
 }
 
 export class ForbiddenApiException extends ApiException {
-  constructor(message = "You do not have permission to perform this action", code = "FORBIDDEN") {
-    super(code, message, HttpStatus.FORBIDDEN);
+  constructor(message = "You do not have permission to perform this action", code = "FORBIDDEN", details?: Record<string, unknown>) {
+    super(code, message, HttpStatus.FORBIDDEN, details);
   }
 }
 
 export class NotFoundApiException extends ApiException {
   constructor(message = "Resource not found", code = "NOT_FOUND") {
     super(code, message, HttpStatus.NOT_FOUND);
+  }
+}
+
+/** An organisation-level (not user-level) block — the account isn't active, or its subscription can't fund access right now. Distinct from ForbiddenApiException so a frontend can render "renew your subscription" instead of "you lack a role permission." */
+export class PaymentRequiredApiException extends ApiException {
+  constructor(message: string, code: string, details?: Record<string, unknown>) {
+    super(code, message, HttpStatus.PAYMENT_REQUIRED, details);
   }
 }
 

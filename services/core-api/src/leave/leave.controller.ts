@@ -12,12 +12,15 @@ import type { AccessTokenPayload } from "@nexora/types";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { CurrentOrganisationId } from "../common/decorators/current-organisation-id.decorator";
 import { RequirePermissions } from "../common/decorators/require-permissions.decorator";
+import { RequireModule } from "../common/decorators/require-module.decorator";
 import { PermissionsGuard } from "../common/guards/permissions.guard";
+import { OrganisationAccessGuard } from "../common/guards/organisation-access.guard";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LeaveService } from "./leave.service";
 
 @ApiTags("leave")
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, OrganisationAccessGuard)
+@RequireModule("leave")
 @Controller("organisation/leave")
 export class LeaveController {
   constructor(private readonly leave: LeaveService) {}

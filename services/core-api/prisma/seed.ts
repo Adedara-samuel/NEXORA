@@ -21,6 +21,7 @@ const PERMISSIONS: { key: string; description: string; category: string }[] = [
   { key: "billing:read", description: "View plans, subscriptions and invoices", category: "billing" },
   { key: "billing:manage_plans", description: "Create and edit plans and their included modules", category: "billing" },
   { key: "billing:manage_subscriptions", description: "Assign plans, renew and cancel organisation subscriptions", category: "billing" },
+  { key: "billing:manage_overrides", description: "Grant or revoke individual modules for a specific organisation, overriding its plan", category: "billing" },
 ];
 
 /**
