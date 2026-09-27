@@ -10,6 +10,7 @@ import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitl
 import { NexoraApiError } from "@nexora/api-client";
 import { AppShell } from "@/components/app-shell";
 import { SubscriptionPanel } from "@/components/subscription-panel";
+import { AccessControlPanel } from "@/components/access-control-panel";
 import { apiClient } from "@/lib/api-client";
 import { formatMoney } from "@/lib/format";
 import { useAuthStore } from "@/store/auth-store";
@@ -124,6 +125,20 @@ export default function OrganisationDetailPage() {
               </CardHeader>
               <CardContent>
                 <SubscriptionPanel organisationId={organisationId} canManage={hasPermission("billing:manage_subscriptions")} />
+              </CardContent>
+            </Card>
+          </Reveal>
+        )}
+
+        {hasPermission("billing:read") && (
+          <Reveal delayMs={150}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Access control</CardTitle>
+                <CardDescription>Exactly what this organisation can use right now — its plan, fine-tuned per module if needed.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AccessControlPanel organisationId={organisationId} canManage={hasPermission("billing:manage_overrides")} />
               </CardContent>
             </Card>
           </Reveal>

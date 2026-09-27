@@ -56,7 +56,7 @@ looked up per-request:
 **Trade-off, deliberate**: a role change takes effect on the user's *next
 token refresh* (access tokens expire in `JWT_ACCESS_EXPIRES_IN`, default
 15m), not instantly. There's no per-request DB/Redis lookup. Revisit if
-Phase 11 (Security + Quality) needs tighter revocation guarantees.
+Phase 12 (Security + Quality) needs tighter revocation guarantees.
 
 The frontend mirrors this: `apps/control-center/src/lib/jwt.ts` decodes the
 access token client-side (no signature check needed — the API is the real

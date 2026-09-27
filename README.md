@@ -41,7 +41,7 @@ packages/
   config/      shared tsconfig/tailwind/eslint config
 infrastructure/
   database/   Postgres init scripts (extensions)
-  nginx/      reverse proxy config (Phase 12)
+  nginx/      reverse proxy config (Phase 13)
 docs/
 scripts/
 ```
@@ -115,8 +115,9 @@ This platform is built incrementally. Status:
 | 8 | NEXORA Knowledge — document ingestion, embeddings, pgvector, RAG | **Verified working end-to-end** — organisations ingest real text knowledge entries into `sapok-ai`, gated by their own real permission catalog; a two-user, permission-aware retrieval test confirmed one user's role sees a gated entry and another's doesn't. A later security review then found and fixed two authorization bugs in this phase's read endpoints (a gated entry's content was readable by any `assistant:use` holder, and route ids allowed path traversal onto other SAPOK AI endpoints) — now covered by Core API's first jest spec; see [`docs/phase-8-nexora-knowledge.md`](docs/phase-8-nexora-knowledge.md) |
 | 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | **Verified working end-to-end** — a real, NEXORA-native action-approval system (not a `sapok-ai` integration this time: the actions are NEXORA business logic gated by NEXORA's own RBAC, which SAPOK AI has no way to enforce). First action tool: payroll disbursement, with server-enforced maker-checker approval — see [`docs/phase-9-ai-actions.md`](docs/phase-9-ai-actions.md) |
 | 10 | NEXORA Intelligence Platform — feedback, evaluation, training data, model registry | **Feedback and evaluation verified working; training data and model registry deliberately not built** — organisations rate assistant replies and see their own feedback trend (via a new tenant-scoped `sapok-ai` endpoint); Control Center shows platform-wide adoption and action volume from NEXORA's own data. SAPOK AI's training-data export is cross-tenant so it stays out of NEXORA entirely, and there is no trained model to put in a registry — see [`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md) |
-| 11 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | Not started |
-| 12 | Deployment — production Docker, CI/CD, monitoring, backups, desktop release | Not started |
+| 11 | Module Entitlement & Organisation Access Control — a plan's modules and the platform's own suspend switch actually gate access, plus per-organisation overrides | **Verified working end-to-end over real HTTP (19/19 checks)** — closes the enforcement gap Phase 3 explicitly named as deferred; see [`docs/phase-11-module-entitlement-and-access-control.md`](docs/phase-11-module-entitlement-and-access-control.md) |
+| 12 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | Not started |
+| 13 | Deployment — production Docker, CI/CD, monitoring, backups, desktop release | Not started |
 
 See the full architecture spec for the detailed requirements behind each
 phase. Full PRD/BRD/SRS documentation with flowcharts is maintained as
@@ -141,31 +142,40 @@ real permission catalog), **Phase 9** (an "Actions" panel — propose a
 registered business action, approve/reject/execute it, with the approve
 button disabled when the viewer is the action's own proposer), **Phase 10**
 (thumbs up/down under every assistant reply, plus a reply-feedback summary
-card; Control Center's dashboard gains an "AI assistant" adoption card), and
-a real **Dashboard** landing page for Organisation Desktop (headcount,
+card; Control Center's dashboard gains an "AI assistant" adoption card), a
+real **Dashboard** landing page for Organisation Desktop (headcount,
 attendance, leave, department distribution, payroll, items needing attention,
 recent activity — every widget backed by real data, sections gated by the
-caller's own permissions) — see
+caller's own permissions), and **Phase 11** (nav items, gated pages and
+dashboard sections now also filter by the organisation's actual plan
+modules — not just the caller's role — plus a lockout screen when the
+organisation itself is suspended and a "Your plan" card on the dashboard;
+Control Center's organisation detail page gains an "Access control" card to
+preview and fine-tune exactly what an organisation can do) — see
 [`docs/organisation-desktop-frontend.md`](docs/organisation-desktop-frontend.md),
 [`docs/phase-7-ai-foundation.md`](docs/phase-7-ai-foundation.md),
 [`docs/phase-8-nexora-knowledge.md`](docs/phase-8-nexora-knowledge.md),
 [`docs/phase-9-ai-actions.md`](docs/phase-9-ai-actions.md),
-[`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md) and
-[`docs/organisation-dashboard.md`](docs/organisation-dashboard.md) for exactly what
-was built and, importantly, **what was and wasn't verified**:
+[`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md),
+[`docs/organisation-dashboard.md`](docs/organisation-dashboard.md) and
+[`docs/phase-11-module-entitlement-and-access-control.md`](docs/phase-11-module-entitlement-and-access-control.md)
+for exactly what was built and, importantly, **what was and wasn't verified**:
 every new API-client method was curl-verified directly against the running
-backend, and the whole app type-checks and production-builds cleanly, but
-the Dashboard and Assistant pages have now also been driven through the real
-sign-in form and real clicks in headless Chrome (the dashboard in dark and
-light themes, the assistant page in dark) with screenshots reviewed. **Every other page has still not been visually tested
-in a real browser in this environment** — treat those as "should work" rather
-than "confirmed working" until someone clicks through them. **Process carried
-forward**: every module's frontend gets built in the same pass as its
-backend (or, where a backend shipped ahead of its UI, closed out in a
-dedicated catch-up pass immediately after) rather than left indefinitely
-backend-only. **Phase 10 was the explicit checkpoint the project owner asked
-to be notified about — it has now been reached.** Phase 11 (Security +
-Quality) is next.
+backend, Phase 11's access-control logic was verified with 19 real HTTP
+checks against the running stack, and the whole app type-checks and
+production-builds cleanly — but the Dashboard and Assistant pages are still
+the only ones driven through the real sign-in form and real clicks in
+headless Chrome (the dashboard in dark and light themes, the assistant page
+in dark); the new Access control card and lockout/plan-card UI have not yet
+been clicked through in a real browser. **Every other page has still not
+been visually tested in a real browser in this environment** — treat those
+as "should work" rather than "confirmed working" until someone clicks
+through them. **Process carried forward**: every module's frontend gets
+built in the same pass as its backend (or, where a backend shipped ahead of
+its UI, closed out in a dedicated catch-up pass immediately after) rather
+than left indefinitely backend-only. **Phase 10 was the explicit checkpoint
+the project owner asked to be notified about — it was reached, and Phase 11
+has now also shipped.** Phase 12 (Security + Quality) is next.
 
 ### Design constraint carried forward to Phase 9
 

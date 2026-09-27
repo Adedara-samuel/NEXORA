@@ -4,6 +4,12 @@ Status: **verified working end-to-end**, behind a **mock payment gateway**.
 No real payment provider is integrated yet — see [Mock payment gateway](#mock-payment-gateway-important)
 below before treating any of this as production-ready for real money.
 
+**Module entitlement enforcement — the gap named below — was closed in
+[Phase 11](phase-11-module-entitlement-and-access-control.md).** Everything
+on this page about Plans, Modules, Subscriptions and Invoices is still
+accurate; Phase 11 is what makes a plan's `moduleKeys` actually control
+access instead of just being metadata.
+
 ## What this phase adds
 
 1. **Module catalog** — a fixed list of the business modules Phase 5 will
@@ -144,6 +150,5 @@ recorded and the subscription's period is untouched.
   is untouched).
 - No automatic recurring billing — renewal is a manual/triggered action, not
   a background job (see [Subscription lifecycle](#subscription-lifecycle)).
-- Module *entitlement enforcement* (actually blocking access to a module an
-  org's plan doesn't include) isn't built — that's meaningful once Phase 5's
-  business modules exist to gate.
+- ~~Module *entitlement enforcement* (actually blocking access to a module an
+  org's plan doesn't include) isn't built~~ — **built in [Phase 11](phase-11-module-entitlement-and-access-control.md).**
