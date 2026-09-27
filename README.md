@@ -116,7 +116,7 @@ This platform is built incrementally. Status:
 | 9 | NEXORA AI Actions — tool registry, authorized business actions, approval workflows | **Verified working end-to-end** — a real, NEXORA-native action-approval system (not a `sapok-ai` integration this time: the actions are NEXORA business logic gated by NEXORA's own RBAC, which SAPOK AI has no way to enforce). First action tool: payroll disbursement, with server-enforced maker-checker approval — see [`docs/phase-9-ai-actions.md`](docs/phase-9-ai-actions.md) |
 | 10 | NEXORA Intelligence Platform — feedback, evaluation, training data, model registry | **Feedback and evaluation verified working; training data and model registry deliberately not built** — organisations rate assistant replies and see their own feedback trend (via a new tenant-scoped `sapok-ai` endpoint); Control Center shows platform-wide adoption and action volume from NEXORA's own data. SAPOK AI's training-data export is cross-tenant so it stays out of NEXORA entirely, and there is no trained model to put in a registry — see [`docs/phase-10-intelligence-platform.md`](docs/phase-10-intelligence-platform.md) |
 | 11 | Module Entitlement & Organisation Access Control — a plan's modules and the platform's own suspend switch actually gate access, plus per-organisation overrides | **Verified working end-to-end over real HTTP (19/19 checks)** — closes the enforcement gap Phase 3 explicitly named as deferred; see [`docs/phase-11-module-entitlement-and-access-control.md`](docs/phase-11-module-entitlement-and-access-control.md) |
-| 12 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | Not started |
+| 12 | Security + Quality — tenant isolation, financial, RBAC, AI security, E2E, performance testing | **Tenant isolation & RBAC verified over real HTTP (26/26 e2e); financial math & AI maker-checker unit-verified (22/22); load testing scoped but not run for real** — see [`docs/phase-12-security-and-quality.md`](docs/phase-12-security-and-quality.md) |
 | 13 | Deployment — production Docker, CI/CD, monitoring, backups, desktop release | Not started |
 
 See the full architecture spec for the detailed requirements behind each
@@ -175,7 +175,8 @@ built in the same pass as its backend (or, where a backend shipped ahead of
 its UI, closed out in a dedicated catch-up pass immediately after) rather
 than left indefinitely backend-only. **Phase 10 was the explicit checkpoint
 the project owner asked to be notified about — it was reached, and Phase 11
-has now also shipped.** Phase 12 (Security + Quality) is next.
+has now also shipped, and so has Phase 12's tenant-isolation/RBAC/financial/
+AI-security test coverage.** Phase 13 (Deployment) is next.
 
 ### Design constraint carried forward to Phase 9
 
