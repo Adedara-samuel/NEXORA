@@ -17,7 +17,7 @@ export default function DocumentsPage() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
   return (
-    <AppShell>
+    <AppShell requiredModule="documents">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Documents</h1>

@@ -24,7 +24,7 @@ export default function LeavePage() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
   return (
-    <AppShell>
+    <AppShell requiredModule="leave">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Leave</h1>

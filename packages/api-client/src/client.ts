@@ -21,6 +21,7 @@ import type {
   ModuleCatalogEntry,
   Organisation,
   OrganisationDashboardSummary,
+  OrganisationEntitlements,
   OrganisationDocument,
   OrganisationTaxSettings,
   OrganisationUser,
@@ -73,6 +74,7 @@ import type {
   RenewSubscriptionInput,
   RunPayrollInput,
   SearchAssistantKnowledgeInput,
+  SetModuleOverrideInput,
   SubmitAssistantMessageFeedbackInput,
   UpdateAttendanceInput,
   UpdateComplianceRecordInput,
@@ -377,6 +379,17 @@ export class NexoraApiClient {
 
   organisationDashboard = {
     getSummary: (): Promise<OrganisationDashboardSummary> => this.request("/api/v1/organisation/dashboard/summary"),
+  };
+
+  organisationBilling = {
+    getSummary: (): Promise<OrganisationEntitlements> => this.request("/api/v1/organisation/billing/summary"),
+  };
+
+  entitlements = {
+    get: (organisationId: string): Promise<OrganisationEntitlements> => this.request(`/api/v1/organisations/${organisationId}/entitlements`),
+
+    setOverride: (organisationId: string, moduleKey: string, input: SetModuleOverrideInput): Promise<OrganisationEntitlements> =>
+      this.request(`/api/v1/organisations/${organisationId}/entitlements/${moduleKey}`, { method: "PUT", body: JSON.stringify(input) }),
   };
 
   assistant = {

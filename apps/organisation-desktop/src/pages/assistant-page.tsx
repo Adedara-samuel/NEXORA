@@ -23,7 +23,7 @@ export default function AssistantPage() {
   const [showActions, setShowActions] = useState(false);
 
   return (
-    <AppShell>
+    <AppShell requiredModule="assistant">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <Reveal>
           <div className="flex flex-wrap items-center justify-between gap-2">

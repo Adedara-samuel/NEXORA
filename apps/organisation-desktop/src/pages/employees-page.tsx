@@ -21,7 +21,7 @@ export default function EmployeesPage() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
   return (
-    <AppShell>
+    <AppShell requiredModule="employees">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Employees</h1>

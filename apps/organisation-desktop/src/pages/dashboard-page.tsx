@@ -20,10 +20,37 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import type { OrganisationActivityEntry, OrganisationDashboardSummary } from "@nexora/types";
+import type { OrganisationActivityEntry, OrganisationDashboardSummary, OrganisationEntitlements } from "@nexora/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Reveal, cn } from "@nexora/ui";
 import { AppShell } from "../components/app-shell";
 import { apiClient } from "../lib/api-client";
+import { useEntitlements } from "../lib/entitlements";
+
+/**
+ * A role can hold `payroll:read` (etc.) regardless of what the organisation's
+ * plan actually includes — SUPER_ADMIN gets the full permission catalog at
+ * creation, independent of billing. Without this, the dashboard would show
+ * (and link to) sections the plan doesn't include just because the role
+ * happens to allow them. Sections with no corresponding Plan module
+ * (recentActivity/organisations/roles) are left untouched.
+ */
+const SECTION_MODULE_KEYS: Partial<Record<keyof OrganisationDashboardSummary, string>> = {
+  employees: "employees",
+  attendance: "attendance",
+  leave: "leave",
+  payroll: "payroll",
+  documents: "documents",
+  compliance: "compliance",
+  assistant: "assistant",
+};
+
+function filterSummaryByEntitlements(summary: OrganisationDashboardSummary, entitlements: OrganisationEntitlements): OrganisationDashboardSummary {
+  const filtered = { ...summary };
+  for (const [section, moduleKey] of Object.entries(SECTION_MODULE_KEYS) as [keyof OrganisationDashboardSummary, string][]) {
+    if (!entitlements.effectiveModuleKeys.includes(moduleKey)) delete filtered[section];
+  }
+  return filtered;
+}
 
 // Categorical (identity) colours for the department donut — decorative, not
 // status colours, so deliberately separate from the success/danger tokens.
@@ -95,7 +122,8 @@ export default function DashboardPage() {
     queryFn: () => apiClient.organisationDashboard.getSummary(),
     refetchInterval: 60_000,
   });
-  const summary = summaryQuery.data;
+  const entitlementsQuery = useEntitlements();
+  const summary = summaryQuery.data && entitlementsQuery.data ? filterSummaryByEntitlements(summaryQuery.data, entitlementsQuery.data) : summaryQuery.data;
 
   return (
     <AppShell>
@@ -121,13 +149,13 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {summary && <DashboardContent summary={summary} />}
+        {summary && <DashboardContent summary={summary} entitlements={entitlementsQuery.data} />}
       </div>
     </AppShell>
   );
 }
 
-function DashboardContent({ summary }: { summary: OrganisationDashboardSummary }) {
+function DashboardContent({ summary, entitlements }: { summary: OrganisationDashboardSummary; entitlements: OrganisationEntitlements | undefined }) {
   const hasAnySection = Object.keys(summary).some((key) => key !== "generatedAt");
   if (!hasAnySection) {
     return (
@@ -229,9 +257,39 @@ function DashboardContent({ summary }: { summary: OrganisationDashboardSummary }
               <PayrollCard payroll={summary.payroll} />
             </Reveal>
           )}
+          {entitlements && (
+            <Reveal delayMs={160}>
+              <PlanCard entitlements={entitlements} />
+            </Reveal>
+          )}
         </div>
       </div>
     </>
+  );
+}
+
+function PlanCard({ entitlements }: { entitlements: OrganisationEntitlements }) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm">Your plan</CardTitle>
+        <Badge variant={entitlements.subscriptionStatus === "GRACE_PERIOD" ? "outline" : "success"}>{entitlements.planName ?? "No plan"}</Badge>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {entitlements.currentPeriodEnd && (
+          <p className="text-xs text-muted-foreground">Renews {new Date(entitlements.currentPeriodEnd).toLocaleDateString()}</p>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {entitlements.effectiveModuleKeys.length === 0 && <span className="text-xs text-muted-foreground">No modules included.</span>}
+          {entitlements.effectiveModuleKeys.map((key) => (
+            <Badge key={key} variant="outline" className="capitalize">
+              {key}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Contact your platform administrator to change your plan.</p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -22,7 +22,7 @@ export default function CompliancePage() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
   return (
-    <AppShell>
+    <AppShell requiredModule="compliance">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <Reveal>
           <h1 className="text-2xl font-semibold text-foreground">Compliance</h1>
