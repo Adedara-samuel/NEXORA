@@ -6,11 +6,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { CurrentOrganisationId } from "../common/decorators/current-organisation-id.decorator";
 import { RequirePermissions } from "../common/decorators/require-permissions.decorator";
 import { PermissionsGuard } from "../common/guards/permissions.guard";
+import { OrganisationAccessGuard } from "../common/guards/organisation-access.guard";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { OrganisationStructureService } from "./organisation-structure.service";
 
 @ApiTags("organisation-structure")
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, OrganisationAccessGuard)
 @Controller("organisation")
 export class OrganisationStructureController {
   constructor(private readonly structure: OrganisationStructureService) {}

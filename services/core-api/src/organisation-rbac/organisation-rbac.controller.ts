@@ -11,11 +11,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { CurrentOrganisationId } from "../common/decorators/current-organisation-id.decorator";
 import { RequirePermissions } from "../common/decorators/require-permissions.decorator";
 import { PermissionsGuard } from "../common/guards/permissions.guard";
+import { OrganisationAccessGuard } from "../common/guards/organisation-access.guard";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { OrganisationRbacService } from "./organisation-rbac.service";
 
 @ApiTags("organisation-rbac")
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, OrganisationAccessGuard)
 @Controller("organisation")
 export class OrganisationRbacController {
   constructor(private readonly rbac: OrganisationRbacService) {}

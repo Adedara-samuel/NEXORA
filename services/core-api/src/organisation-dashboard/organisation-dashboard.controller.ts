@@ -1,11 +1,13 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { AccessTokenPayload } from "@nexora/types";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { CurrentOrganisationId } from "../common/decorators/current-organisation-id.decorator";
+import { OrganisationAccessGuard } from "../common/guards/organisation-access.guard";
 import { OrganisationDashboardService } from "./organisation-dashboard.service";
 
 @ApiTags("organisation-dashboard")
+@UseGuards(OrganisationAccessGuard)
 @Controller("organisation/dashboard")
 export class OrganisationDashboardController {
   constructor(private readonly dashboard: OrganisationDashboardService) {}
