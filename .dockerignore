@@ -1,0 +1,37 @@
+# Keeps `docker build -f services/core-api/Dockerfile .` (run from the repo
+# root — see that file's own first line) from sending gigabytes of
+# node_modules/build output into the build context. The Dockerfile COPYs
+# only the specific package.json/source paths it needs, so none of this is
+# actually read during the build — it was only ever bloating context upload
+# time and Docker's build cache.
+
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+dist/
+build/
+.next/
+out/
+.turbo/
+**/*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+target/
+src-tauri/target/
+apps/organisation-desktop/src-tauri/icons/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+*.log
+
+.git/
+.github/
+.vscode/
+.kilo/

@@ -1,0 +1,66 @@
+name: Release Sapok OneGrid Desktop
+
+# Builds the Organisation Desktop Tauri app for Windows, macOS and Linux and
+# publishes the installers to a GitHub Release.
+#
+# Trigger: push a tag matching desktop-v* (e.g. `git tag desktop-v0.1.0 && git
+# push origin desktop-v0.1.0`), or run manually from the Actions tab.
+#
+# NOT verified end to end in this environment — there is no Rust toolchain
+# available here to actually run `tauri build` locally, so this workflow has
+# only been reviewed against the official tauri-action documentation, not
+# exercised. The first real tag push IS the first real test of it; check the
+# Actions run before trusting the release artifacts.
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch: {}
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+          - platform: macos-latest
+          - platform: ubuntu-latest
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: corepack enable
+
+      # Tauri's Linux targets (.deb, .AppImage) need the system WebKitGTK
+      # stack — not present on the bare ubuntu-latest runner image.
+      - if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: pnpm install --frozen-lockfile
+
+      # Org Desktop's Vite build resolves @nexora/types and @nexora/validation
+      # to their compiled dist/ — same reason the Dockerfile and CI build
+      # these two before anything that imports them.
+      - run: pnpm --filter @nexora/types build
+      - run: pnpm --filter @nexora/validation build
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/organisation-desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "Sapok OneGrid Desktop ${{ github.ref_name }}"
+          releaseDraft: true
+          prerelease: false

@@ -1,0 +1,91 @@
+name: CI
+
+# Runs on every push/PR against main. This is the gate a real CI/CD pipeline
+# needs before any deploy: Render (Core API) and Vercel (Control Center)
+# both already auto-deploy from this repo, but neither of them runs this
+# repo's own test suites first — this workflow is what actually checks the
+# code before it ships, not just that it happens to build.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-lint-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # Core API's unit specs mock Prisma/fetch entirely — no services needed.
+      - run: pnpm --filter @nexora/core-api test
+
+  # Tenant isolation, RBAC, financial and AI-action-security regression tests
+  # (Phase 12) — boots the real app against real Postgres/Redis, so this job
+  # (unlike the two above) needs service containers.
+  e2e-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: nexora
+          POSTGRES_PASSWORD: nexora_ci_password
+          POSTGRES_DB: nexora
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nexora -d nexora"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://nexora:nexora_ci_password@localhost:5432/nexora?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-real-use
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-real-use
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # Same build order the Dockerfile uses: core-api imports these two
+      # packages' compiled dist, not their TypeScript source, in a real build.
+      - run: pnpm --filter @nexora/types build
+      - run: pnpm --filter @nexora/validation build
+      - run: pnpm --filter @nexora/core-api prisma:generate
+      - run: pnpm --filter @nexora/core-api prisma:deploy
+      - run: pnpm --filter @nexora/core-api prisma:seed
+      - run: pnpm --filter @nexora/core-api test:e2e

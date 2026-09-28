@@ -1,0 +1,59 @@
+name: Database backup
+
+# Nightly pg_dump of the production database, kept as a downloadable
+# workflow artifact. This is a real, working backup — not a placeholder —
+# but a deliberately modest one: see the retention/storage notes below
+# before treating it as your only line of defence.
+#
+# Setup (one-time):
+#   1. GitHub repo -> Settings -> Secrets and variables -> Actions -> Secrets tab
+#   2. New repository secret named BACKUP_DATABASE_URL
+#   3. Value = your database's DIRECT (non-pooled) connection string, e.g.:
+#        postgresql://postgres:PASSWORD@db.<project-ref>.supabase.co:5432/postgres?sslmode=require
+#      Use the DIRECT connection, not the pooler (pgbouncer/Supavisor) URL —
+#      pg_dump needs session-level behaviour the transaction pooler doesn't
+#      support, and Supabase's own docs recommend the direct string for
+#      dump/restore specifically.
+#
+# You can also trigger a run manually from the Actions tab to take a backup
+# right now (e.g. immediately before a risky migration).
+#
+# What this does NOT do: replicate to a second region, encrypt the dump
+# beyond GitHub's own storage encryption, or restore anything automatically.
+# GitHub Actions artifacts expire (see retention-days below) — for backups
+# you need to keep for months/years, add a step that uploads to S3/R2/Backblaze
+# instead of (or alongside) actions/upload-artifact.
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump database
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "BACKUP_DATABASE_URL repository secret is not set — nothing to back up. See this workflow's header comment for setup."
+            exit 0
+          fi
+          sudo apt-get update -y && sudo apt-get install -y postgresql-client
+          STAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          echo "DUMP_FILE=nexora-backup-$STAMP.sql.gz" >> "$GITHUB_ENV"
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges | gzip > "nexora-backup-$STAMP.sql.gz"
+          ls -lh "nexora-backup-$STAMP.sql.gz"
+
+      - name: Upload as workflow artifact
+        if: env.DUMP_FILE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.DUMP_FILE }}
+          path: ${{ env.DUMP_FILE }}
+          # GitHub's own storage isn't free or unlimited — this is a
+          # deliberately short window for a quick "undo yesterday's mistake"
+          # restore, not long-term archival.
+          retention-days: 14
