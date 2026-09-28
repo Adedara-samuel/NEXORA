@@ -26,6 +26,13 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    watch: {
+      // Without this, Vite's file watcher reaches into src-tauri/target —
+      // Cargo's own build output — and on Windows, watching a build
+      // artifact while `cargo run` still has it open/locked crashes the
+      // watcher with EBUSY, taking down `tauri dev` entirely.
+      ignored: ["**/src-tauri/**"],
+    },
   },
   envPrefix: ["VITE_", "TAURI_"],
   build: {
